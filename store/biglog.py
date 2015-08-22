@@ -1,0 +1,4 @@
+
+class BigLog(object):
+    def __init__(self):
+        pass

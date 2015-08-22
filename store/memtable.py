@@ -1,0 +1,3 @@
+
+class MemTable(dict):
+    pass
