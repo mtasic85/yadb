@@ -1,3 +1,5 @@
+__all__ = ['Table']
+
 import os
 import sys
 
@@ -49,7 +51,7 @@ class Table(object):
     def commit_if_required(self):
         if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
             self.commit()
-
+    
     def commit(self):
         cl = CommitLog(self)
         cl.save()

@@ -1,3 +1,5 @@
+__all__ = ['SSTable']
+
 import os
 import sys
 import yaml
@@ -33,3 +35,8 @@ class SSTable(object):
         with open(path, 'wb') as f:
             s = yaml.dump(self.sorted_rows)
             f.write(s)
+
+    def get(self, key):
+        # FIXME:
+        value = None
+        return value

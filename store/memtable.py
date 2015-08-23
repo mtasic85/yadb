@@ -1,3 +1,6 @@
+__all__ = ['MemTable']
 
-class MemTable(dict):
+from collections import OrderedDict
+
+class MemTable(OrderedDict):
     pass

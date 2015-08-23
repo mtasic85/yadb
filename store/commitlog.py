@@ -1,3 +1,5 @@
+__all__ = ['CommitLog']
+
 from sstable import SSTable
 
 class CommitLog(object):

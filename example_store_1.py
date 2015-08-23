@@ -5,18 +5,11 @@ s = Store(data_path='data')
 db1 = s.create_database('db1')
 t1 = db1.create_table('t1', a='int', b='str', c='float', primary_key=['a', 'c'])
 
-for i in range(100):
-    for j in range(100):
-        t1.insert(a=i, b='2', c=float(j))
-
-print t1.get(1, 3.0)
-print t1.get(10, 30.0)
-
-pprint(t1.memtable)
-
-# print t1.query.select('b', 'c').where(t1.a <= 1 and t1.a >= 10).one()
-
-# q = t1.query
-# q = q.select('b', 'c')
-# q = q.where(t1.a <= 1 and t1.a >= 10)
-# rows = q.all()
+with s.tx() as t:
+    for i in range(100):
+        for j in range(100):
+            t1.insert(a=i, b='2', c=float(j))
+    
+    # print t1.get(1, 3.0)
+    # print t1.get(10, 30.0)
+    print t1.query.select('b', 'c').where(t1.a <= 1 and t1.a >= 10).one()
