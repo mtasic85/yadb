@@ -13,6 +13,7 @@ class Table(object):
     MEMTABLE_LIMIT_N_ITEMS = 1000
 
     def __init__(self, db, table_name):
+        self.store = db.store
         self.db = db
         self.table_name = table_name
 
@@ -51,17 +52,20 @@ class Table(object):
     def commit_if_required(self):
         if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
             self.commit()
-    
+
     def commit(self):
         cl = CommitLog(self)
         cl.save()
 
         self.memtable = MemTable()
 
-    def insert(self, **kwargs):
-        # compare against schema
-        row = kwargs
+    def insert(self, **row):
+        # tx
+        tx = self.store.get_current_transaction()
+        tx.log(('insert', self.db_name, self.table_name, row))
 
+    def commit_insert(self, **row):
+        # compare against schema
         for k, v in row.items():
             if k not in self.schema.type_fields:
                 raise Exception('filed %r is not defined in schema for table %r' % (k, self.table_name))
@@ -73,15 +77,6 @@ class Table(object):
 
             if k not in row:
                 row[k] = None
-
-        # # build key
-        # key = []
-        #
-        # for k in self.schema.type_fields['primary_key']:
-        #     v = row[k]
-        #     key.append(v)
-        #
-        # key = tuple(key)
 
         # build key
         key = tuple(row[k] for k in self.schema.type_fields['primary_key'])

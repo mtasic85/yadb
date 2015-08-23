@@ -9,7 +9,7 @@ class Database(object):
     def __init__(self, store, db_name):
         self.store = store
         self.db_name = db_name
-
+    
     @classmethod
     def create(cls, store, db_name):
         # create database dir
