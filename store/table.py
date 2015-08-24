@@ -5,7 +5,7 @@ import sys
 
 from .schema import Schema
 from .memtable import MemTable
-from .commitlog import CommitLog
+from .sstable import SSTable
 from .query import Query
 
 class Table(object):
