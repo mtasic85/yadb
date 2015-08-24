@@ -31,14 +31,15 @@ class Transaction(object):
             for tx in self.store.commiting_transactions:
                 for a in self._log:
                     for b in tx._log:
+                        # detect conflict
                         if a[0] == b[0] == 'insert':
                             if a[1] == b[1] and a[2] == b[2]:
                                 conflict = True
                                 break
-                    
+
                     if conflict:
                         break
-                
+
                 if conflict:
                     break
 

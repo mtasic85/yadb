@@ -6,7 +6,6 @@ import sys
 from .schema import Schema
 from .memtable import MemTable
 from .commitlog import CommitLog
-from .biglog import BigLog
 from .query import Query
 
 class Table(object):
