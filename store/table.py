@@ -2,6 +2,7 @@ __all__ = ['Table']
 
 import os
 import sys
+from collections import OrderedDict
 
 from .schema import Schema
 from .memtable import MemTable
@@ -24,11 +25,26 @@ class Table(object):
         # memtable
         self.memtable = MemTable()
 
+        # sstables
+        self.sstables = []
+
     def __getattr__(self, attr):
         pass
 
     @classmethod
-    def create(cls, db, table_name, type_fields):
+    def create(cls, db, table_name, _type_fields):
+        # sort type_fields
+        type_fields = OrderedDict(
+            (c, t)
+            for c, t in sorted(_type_fields.items(), key=lambda n: n[0])
+            if c != 'primary_key'
+        )
+
+        # add primary_key at the end of dict
+        if 'primary_key' in _type_fields:
+            v = _type_fields['primary_key']
+            type_fields['primary_key'] = v
+
         # create table dir inside of database dir
         dirpath = os.path.join(db.store.data_path, db.db_name, table_name)
         
@@ -49,8 +65,9 @@ class Table(object):
         return q
 
     def commit_if_required(self):
-        if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
-            self.commit()
+        # if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
+        #     self.commit()
+        pass
 
     def commit(self):
         cl = CommitLog(self)
@@ -61,7 +78,7 @@ class Table(object):
     def insert(self, **row):
         # tx
         tx = self.store.get_current_transaction()
-        tx.log(('insert', self.db_name, self.table_name, row))
+        tx.log((self.db, self.table, self.commit_insert, (), row))
 
     def commit_insert(self, **row):
         # compare against schema

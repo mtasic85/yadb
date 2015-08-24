@@ -20,8 +20,8 @@ class Transaction(object):
         self.execute()
         return False
 
-    def log(self, *args):
-        self._log.append(args)
+    def log(self, inst):
+        self._log.append(inst)
 
     def check(self):
         print 'check:', self
@@ -32,8 +32,8 @@ class Transaction(object):
                 for a in self._log:
                     for b in tx._log:
                         # detect conflict
-                        if a[0] == b[0] == 'insert':
-                            if a[1] == b[1] and a[2] == b[2]:
+                        if a[0] == b[0] and a[1] == b[1]:
+                            if a[3] == b[3] == 'insert':
                                 conflict = True
                                 break
 
@@ -48,6 +48,10 @@ class Transaction(object):
 
     def commit(self):
         print 'commit:', self
+
+        for inst in self._log:
+            db, table, f = inst[0:3]
+            f(*inst[3], **inst[4])
 
     def execute(self):
         print 'execute:', self
