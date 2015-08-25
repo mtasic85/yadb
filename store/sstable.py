@@ -32,10 +32,12 @@ class SSTable(object):
         filename = 'commitlog-%s.yaml' % str(decimal.Decimal(time.time()))
         path = os.path.join(dirpath, filename)
         
+        # row struct
         row_struct = (
             b'!Q', # row len
         )
 
+        # len for each column
         row_struct += tuple(n for n in self.table.schema.type_fields if n != 'primary_key')
 
         with open(path, 'wb') as f:

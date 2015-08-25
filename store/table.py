@@ -35,16 +35,40 @@ class Table(object):
     @classmethod
     def create(cls, db, table_name, _type_fields):
         # sort type_fields
-        type_fields = OrderedDict(
-            (c, t)
-            for c, t in sorted(_type_fields.items(), key=lambda n: n[0])
-            if c != 'primary_key'
-        )
+        type_fields = OrderedDict()
+
+        for c, t in sorted(_type_fields.items(), key=lambda n: n[0]):
+            if c == 'primary_key':
+                continue
+
+            if t == 'bool':
+                coltype = Column.Bool(c, t, 1)
+            elif t == 'int':
+                coltype = Column.Int(c, t, 8)
+            elif t == 'float':
+                coltype = Column.Float(c, t, 8)
+            elif t.startswith('str'):
+                size = int(t[t.index('[') + 1:t.index(']')])
+                coltype = Column.Str(c, t, size)
+            else:
+                raise Exception('unsupported column type')
+
+            type_fields[c] = coltype
 
         # add primary_key at the end of dict
         if 'primary_key' in _type_fields:
-            v = _type_fields['primary_key']
-            type_fields['primary_key'] = v
+            column_names = _type_fields['primary_key']
+
+            for column_name in column_names:
+                coltype = type_fields[column_names]
+
+                if coltype.type == 'str' and coltype.size is None:
+                    raise Exception(
+                        'Primary key\'s column with type'
+                        '"str" must have fixed size'
+                    )
+
+            type_fields['primary_key'] = column_names
 
         # create table dir inside of database dir
         dirpath = os.path.join(db.store.data_path, db.db_name, table_name)
