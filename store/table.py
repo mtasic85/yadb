@@ -25,7 +25,7 @@ class Table(object):
         self.schema = schema
 
         # memtable
-        self.memtable = MemTable()
+        self.memtable = MemTable(self)
 
         # sstables
         self.sstables = []
@@ -43,33 +43,36 @@ class Table(object):
                 continue
 
             if t == 'bool':
-                coltype = Column.Bool(c, t, 1)
+                coltype = Column(c, t, 1)
             elif t == 'int':
-                coltype = Column.Int(c, t, 8)
+                coltype = Column(c, t, 8)
             elif t == 'float':
-                coltype = Column.Float(c, t, 8)
+                coltype = Column(c, t, 8)
             elif t.startswith('str'):
-                size = int(t[t.index('[') + 1:t.index(']')])
-                coltype = Column.Str(c, t, size)
+                if '[' in t:
+                    size = int(t[t.index('[') + 1:t.index(']')])
+                else:
+                    size = None
+
+                coltype = Column(c, t, size)
             else:
                 raise Exception('unsupported column type')
 
             type_fields[c] = coltype
 
         # add primary_key at the end of dict
-        if 'primary_key' in _type_fields:
-            column_names = _type_fields['primary_key']
+        column_names = _type_fields.get('primary_key', [])
 
-            for column_name in column_names:
-                coltype = type_fields[column_names]
+        for column_name in column_names:
+            coltype = type_fields[column_name]
 
-                if coltype.type == 'str' and coltype.size is None:
-                    raise Exception(
-                        'Primary key\'s column with type'
-                        '"str" must have fixed size'
-                    )
+            if coltype.type == 'str' and coltype.size is None:
+                raise Exception(
+                    'Primary key\'s column with type'
+                    '"str" must have fixed size'
+                )
 
-            type_fields['primary_key'] = column_names
+        type_fields['primary_key'] = column_names
 
         # create table dir inside of database dir
         dirpath = os.path.join(db.store.data_path, db.db_name, table_name)
@@ -91,15 +94,14 @@ class Table(object):
         return q
 
     def commit_if_required(self):
-        # if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
-        #     self.commit()
-        pass
+        if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
+            self.commit()
+        # pass
 
     def commit(self):
-        cl = CommitLog(self)
-        cl.save()
-
-        self.memtable = MemTable()
+        rows = self.memtable.get_sorted_rows()
+        cl = SSTable.create(self, rows)
+        self.memtable = MemTable(self)
 
     def insert(self, **row):
         # tx
