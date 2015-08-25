@@ -8,6 +8,7 @@ from .schema import Schema
 from .memtable import MemTable
 from .sstable import SSTable
 from .query import Query
+from .deferred import Deferred
 
 class Table(object):
     MEMTABLE_LIMIT_N_ITEMS = 1000
@@ -104,5 +105,16 @@ class Table(object):
         self.commit_if_required()
 
     def get(self, *args):
+        # deferred
+        d = Deferred()
+
+        # tx
+        tx = self.store.get_current_transaction()
+        tx.log((self.db, self.table, self.commit_get, (d,) + args, {}))
+
+        return d
+    
+    def commit_get(self, d, *args):
         key = tuple(args)
-        return self.memtable[key]
+        v = self.memtable[key]
+        d.set(v)
