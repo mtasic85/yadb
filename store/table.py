@@ -4,6 +4,7 @@ import os
 import sys
 from collections import OrderedDict
 
+from .column import Column
 from .schema import Schema
 from .memtable import MemTable
 from .sstable import SSTable
