@@ -110,11 +110,6 @@ class Table(object):
         table = Table(db, table_name)
         return table
 
-    @property
-    def query(self):
-        q = Query(self.db.store)
-        return q
-
     def commit_if_required(self):
         if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
             self.commit()
@@ -133,6 +128,11 @@ class Table(object):
         # self.memtable = MemTable(self)
         self.memtable.clear()
 
+    @property
+    def query(self):
+        q = Query(self.db.store)
+        return q
+    
     def insert(self, **row):
         # tx
         tx = self.store.get_current_transaction()
