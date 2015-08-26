@@ -84,7 +84,6 @@ class SSTable(object):
             if c == 'primary_key':
                 continue
 
-            # print c, p
             v, p = t._get_column_unpacked(mm, p)
             row[c] = v
 

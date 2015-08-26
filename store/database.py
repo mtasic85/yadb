@@ -29,7 +29,7 @@ class Database(object):
         db = Database(store, db_name)
         return db
 
-    def create_table(self, table_name, **type_fields):
+    def table(self, table_name, **type_fields):
         # table
         table = Table.create(self, table_name, type_fields)
         self.tables.append(table)

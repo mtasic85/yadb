@@ -1,9 +1,9 @@
 from pprint import pprint
 from store import Store
 
-s = Store(data_path='data')
-db1 = s.create_database('db1')
-t1 = db1.create_table('t1', a='int', b='str', c='float', primary_key=['a', 'c'])
+s = Store('data')
+db1 = s.database('db1')
+t1 = db1.table('t1', a='int', b='str', c='float', primary_key=['a', 'c'])
 
 with s.tx:
     for i in range(100):

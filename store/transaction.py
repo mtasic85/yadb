@@ -24,7 +24,7 @@ class Transaction(object):
         self._log.append(inst)
 
     def check(self):
-        print 'check:', self
+        # print 'check:', self
         conflict = False
 
         with self.store.check_lock:
@@ -47,14 +47,14 @@ class Transaction(object):
         return passed
 
     def commit(self):
-        print 'commit:', self
+        # print 'commit:', self
 
         for inst in self._log:
             db, table, f = inst[0:3]
             f(*inst[3], **inst[4])
 
     def execute(self):
-        print 'execute:', self
+        # print 'execute:', self
 
         while not self.check():
             time.sleep(0.001)

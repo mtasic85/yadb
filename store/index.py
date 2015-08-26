@@ -45,14 +45,10 @@ class Index(object):
 
         for c in table.schema.type_fields['primary_key']:
             t = table.schema.type_fields[c]
-            
-            # print c, p
             v, p = t._get_column_unpacked(mm, p)
             key.append(v)
 
         sstable_pos, = struct.unpack_from('!Q', mm, p)
-        # p += 8
-
         key = tuple(key)
         return key, sstable_pos
 
@@ -78,7 +74,7 @@ class Index(object):
 
             key_pos = mid * step
             cur_key, sstable_pos = Index._get_key_unpacked(table, self.mm, key_pos)
-            print 'cur_key:', cur_key
+            # print 'cur_key:', cur_key
 
             if cur_key > key:
                 high = mid - 1
