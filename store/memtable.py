@@ -10,7 +10,7 @@ class MemTable(OrderedDict):
     def get_sorted_rows(self):
         rows = self.values()
         
-        rows.sort(key=lambda row: (
+        rows.sort(key=lambda row: tuple(
             row[c] for c in self.table.schema.type_fields['primary_key']
         ))
 

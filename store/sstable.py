@@ -6,23 +6,60 @@ import mmap
 import time
 import struct
 import decimal
-decimal.getcontext().prec = 6
+decimal.getcontext().prec = 4
+
+from index import Index
 
 class SSTable(object):
     def __init__(self, table):
         self.table = table
+
+        # sstable path
+        data_path = self.table.db.store.data_path
+        db_name = self.table.db.db_name
+        table_name = self.table.table_name
+        dirpath = os.path.join(data_path, db_name, table_name)
+        t = '%.4f' % time.time()
+        filename = 'commitlog-%s.sstable' % t
+        path = os.path.join(dirpath, filename)
+        self.path = path
+
+        # index path
+        filename = 'index-%s.index' % t
+        path = os.path.join(dirpath, filename)
+        self.index = Index(self, path)
+
         self.mm = None
+        self.f = None
+
+    def __enter__(self):
+        self.f = open(self.path, 'wb')
+        self.index.f = open(self.index.path, 'wb')
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.index.f.close()
+        self.f.close()
+        return False
+
+    def __getitem__(self, key):
+        value = self.get(key)
+        return value
 
     def __add__(self, other):
         # FIXME:
         pass
 
-    def open(self):
-        # FIXME: open mmap'ed file
-        pass
+    def _add_row(self, row):
+        row_blob = SSTable._get_row_packed(self.table, row)
+        pos = self.f.tell()
+        self.f.write(row_blob)
+
+        key_blob = Index._get_key_packed(self.table, row, pos)
+        self.index.f.write(key_blob)
 
     @classmethod
-    def _get_row_struct_packed(cls, table, row):
+    def _get_row_packed(cls, table, row):
         row_blob_items = []
 
         for c, t in table.schema.type_fields.items():
@@ -30,33 +67,53 @@ class SSTable(object):
                 continue
 
             v = row.get(c, None)
-            b = t._get_column_struct_packed(v)
+            b = t._get_column_packed(v)
             row_blob_items.append(b)
 
         _row_blob = b''.join(row_blob_items)
-        row_blob = struct.pack(b'!Q', _row_blob) + _row_blob
+        row_blob = struct.pack(b'!Q', len(_row_blob)) + _row_blob
         return row_blob
 
     @classmethod
-    def create(cls, table, rows):
-        # # rows: dict: {k: v, k: v, ..}
-        # sorted_rows = rows.items() # list: [(k, v), (k, v), ...]
-        # sorted_rows.sort(key=lambda n: n[0])
-        # sorted_rows = [[list(k), v] for k, v in sorted_rows]
-        
-        # save
-        data_path = table.db.store.data_path
-        db_name = table.db.db_name
-        table_name = table.table_name
-        dirpath = os.path.join(data_path, db_name, table_name)
-        filename = 'commitlog-%s.yaml' % str(decimal.Decimal(time.time()))
-        path = os.path.join(dirpath, filename)
-        
-        with open(path, 'wb') as f:
-            for row in rows:
-                # pack and write row
-                row_blob = cls._get_row_struct_packed(table, row)
-                f.write(row_blob)
+    def _get_row_unpacked(cls, table, mm, pos):
+        row_blob_len, = struct.unpack_from('!Q', mm, pos)
+        row = {}
+        p = pos + 8
 
+        for c, t in table.schema.type_fields.items():
+            if c == 'primary_key':
+                continue
+
+            # print c, p
+            v, p = t._get_column_unpacked(mm, p)
+            row[c] = v
+
+        return row
+
+    @classmethod
+    def create(cls, table, rows):
+        # save
         sst = SSTable(table)
+
+        with sst:
+            for row in rows:
+                sst._add_row(row)
+
         return sst
+
+    def open(self):
+        self.f = open(self.path, 'r+b')
+        self.mm = mmap.mmap(self.f.fileno(), 0)
+
+        self.index.open()
+
+    def close(self):
+        self.index.close()
+
+        self.mm.close()
+        self.f.close()
+
+    def get(self, key):
+        sstable_pos = self.index._get_sstable_pos(key)
+        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        return row

@@ -12,7 +12,7 @@ from .query import Query
 from .deferred import Deferred
 
 class Table(object):
-    MEMTABLE_LIMIT_N_ITEMS = 1000
+    MEMTABLE_LIMIT_N_ITEMS = 10000
 
     def __init__(self, db, table_name):
         self.store = db.store
@@ -99,9 +99,17 @@ class Table(object):
         # pass
 
     def commit(self):
+        # get sorted rows
         rows = self.memtable.get_sorted_rows()
-        cl = SSTable.create(self, rows)
-        self.memtable = MemTable(self)
+        
+        # create new sstable
+        sst = SSTable.create(self, rows)
+        sst.open()
+        self.sstables.append(sst)
+
+        # clear memtable
+        # self.memtable = MemTable(self)
+        self.memtable.clear()
 
     def insert(self, **row):
         # tx

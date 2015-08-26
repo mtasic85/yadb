@@ -17,23 +17,58 @@ class Column(object):
 
     def _get_struct_format(self, value=None):
         if self.type == 'bool':
-            fmt = b'BB'
+            fmt = b'!BBB'
         elif self.type == 'int':
-            fmt = b'Bq'
+            fmt = b'!BBq'
         elif self.type == 'float':
-            fmt = b'Bd'
+            fmt = b'!BBd'
         elif self.type == 'str':
             if value is None:
-                fmt = b'BQ%is' % self.size
+                fmt = b'!BBQ%is' % self.size
             else:
-                fmt = b'BQ%is' % len(value)
+                fmt = b'!BBQ%is' % len(value)
         else:
             raise Exception('unsupported column type')
 
         return fmt
 
-    def _get_column_struct_packed(self, value):
+    def _get_column_packed(self, value=None):
         fmt = self._get_struct_format(value)
         is_null = 1 if value is None else 0
-        b = struct.pack(fmt, is_null, value)
+
+        if self.type == 'str':
+            # FIXME: use self.size if required
+            b = struct.pack(fmt, 0, is_null, len(value), value)
+        else:
+            b = struct.pack(fmt, 0, is_null, value)
+
         return b
+
+    def _get_column_size(self, value):
+        fmt = self._get_struct_format(value)
+        size = struct.calcsize(fmt)
+        return size
+
+    def _get_column_unpacked(self, mm, pos):
+        status, is_null = struct.unpack_from('!BB', mm, pos)
+        pos += 2
+        
+        if self.type == 'bool':
+            value, = struct.unpack_from('!B', mm, pos)
+            value = bool(value)
+            pos += 1
+        elif self.type == 'int':
+            value, = struct.unpack_from('!q', mm, pos)
+            pos += 8
+        elif self.type == 'float':
+            value, = struct.unpack_from('!d', mm, pos)
+            pos += 8
+        elif self.type == 'str':
+            str_len, = struct.unpack_from('!Q', mm, pos)
+            pos += 8
+            value = mm[pos:pos + str_len]
+            pos += str_len
+        else:
+            raise Exception('unsupported column type')
+
+        return value, pos
