@@ -20,10 +20,7 @@ class SSTable(object):
         table_name = self.table.table_name
         dirpath = os.path.join(data_path, db_name, table_name)
         
-        # t
-        if not t:
-            t = '%.4f' % time.time()
-
+        if not t: t = '%.4f' % time.time()
         self.t = t
         
         filename = 'commitlog-%s.sstable' % t
@@ -117,12 +114,10 @@ class SSTable(object):
     def open(self):
         self.f = open(self.path, 'r+b')
         self.mm = mmap.mmap(self.f.fileno(), 0)
-
         self.index.open()
 
     def close(self):
         self.index.close()
-
         self.mm.close()
         self.f.close()
 
