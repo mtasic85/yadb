@@ -11,7 +11,7 @@ decimal.getcontext().prec = 4
 from index import Index
 
 class SSTable(object):
-    def __init__(self, table):
+    def __init__(self, table, t=None):
         self.table = table
 
         # sstable path
@@ -19,7 +19,13 @@ class SSTable(object):
         db_name = self.table.db.db_name
         table_name = self.table.table_name
         dirpath = os.path.join(data_path, db_name, table_name)
-        t = '%.4f' % time.time()
+        
+        # t
+        if not t:
+            t = '%.4f' % time.time()
+
+        self.t = t
+        
         filename = 'commitlog-%s.sstable' % t
         path = os.path.join(dirpath, filename)
         self.path = path
@@ -31,6 +37,14 @@ class SSTable(object):
 
         self.mm = None
         self.f = None
+
+    def __repr__(self):
+         return '<%s db: %r, table: %r, t: %r>' % (
+            self.__class__.__name__,
+            self.table.db.db_name,
+            self.table.table_name,
+            self.t,
+        )
 
     def __enter__(self):
         self.f = open(self.path, 'wb')

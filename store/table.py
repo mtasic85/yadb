@@ -29,6 +29,22 @@ class Table(object):
 
         # sstables
         self.sstables = []
+        dirname = os.path.join(self.store.data_path, self.db.db_name, self.table.table_name)
+
+        for filename in os.listdir(dirname):
+            if not filename.startswith('commitlog'):
+                continue
+
+            s = filename.index('commitlog-') + len('commitlog-')
+            e = filename.index('.sstable')
+            t = filename[s:e]
+
+            # sstable
+            sst = SSTable(self, t)
+            sst.open()
+            self.sstables.append(sst)
+
+        print self.sstables
 
     def __getattr__(self, attr):
         c = getattr(self.schema, attr)
