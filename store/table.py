@@ -31,7 +31,8 @@ class Table(object):
         self.sstables = []
 
     def __getattr__(self, attr):
-        pass
+        c = getattr(self.schema, attr)
+        return c
 
     def close(self):
         for sst in self.sstables:
@@ -89,6 +90,7 @@ class Table(object):
         # create schema
         schema = Schema.create(db, table_name, type_fields)
 
+        # table
         table = Table(db, table_name)
         return table
 
@@ -155,5 +157,17 @@ class Table(object):
     
     def commit_get(self, d, *args):
         key = tuple(args)
-        v = self.memtable[key]
+
+        try:
+            v = self.memtable[key]
+        except KeyError as e:
+            for sst in reversed(self.sstables):
+                try:
+                    v = sst.get(key)
+                    break
+                except KeyError as e:
+                    pass
+            else:
+                raise KeyError
+
         d.set(v)

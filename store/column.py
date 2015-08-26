@@ -8,6 +8,9 @@ class Column(object):
         self.type = type
         self.size = size
 
+    def __repr__(self):
+        return '<%s name: %r, type: %r, size: %i>' % (self.__class__.__name__, self.name, self.type, self.size)
+
     def get_dict(self):
         return {
             'name': self.name,
@@ -52,7 +55,7 @@ class Column(object):
     def _get_column_unpacked(self, mm, pos):
         status, is_null = struct.unpack_from('!BB', mm, pos)
         pos += 2
-        
+
         if self.type == 'bool':
             value, = struct.unpack_from('!B', mm, pos)
             value = bool(value)

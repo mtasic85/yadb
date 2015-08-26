@@ -12,8 +12,11 @@ class Schema(object):
         self.table = table
         self.type_fields = None
 
-    def __getitem__(self, key):
-        return self.type_fields[key]
+    def __getattr__(self, attr):
+        return self.type_fields[attr]
+
+    # def __getitem__(self, key):
+    #     return self.type_fields[key]
 
     @classmethod
     def create(cls, db, table_name, type_fields):
