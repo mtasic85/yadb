@@ -33,6 +33,10 @@ class Table(object):
     def __getattr__(self, attr):
         pass
 
+    def close(self):
+        for sst in self.sstables:
+            sst.close()
+
     @classmethod
     def create(cls, db, table_name, _type_fields):
         # sort type_fields

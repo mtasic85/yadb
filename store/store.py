@@ -13,13 +13,19 @@ from .transaction import Transaction
 class Store(object):
     def __init__(self, data_path=None):
         self.data_path = data_path
+        self.databases = []
         self.transactions = defaultdict(deque)
         self.commiting_transactions = set()
         self.check_lock = threading.Lock()
 
     def create_database(self, db_name):
         db = Database.create(self, db_name)
+        self.databases.append(db)
         return db
+
+    def close(self):
+        for db in self.databases:
+            db.close()
 
     @property
     def tx(self):

@@ -9,6 +9,11 @@ class Database(object):
     def __init__(self, store, db_name):
         self.store = store
         self.db_name = db_name
+        self.tables = []
+
+    def close(self):
+        for t in self.tables:
+            t.close()
 
     @classmethod
     def create(cls, store, db_name):
@@ -25,4 +30,5 @@ class Database(object):
 
     def create_table(self, table_name, **type_fields):
         table = Table.create(self, table_name, type_fields)
+        self.tables.append(table)
         return table

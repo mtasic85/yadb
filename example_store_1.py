@@ -21,3 +21,5 @@ with s.tx:
 # print t1.sstables[0].index.get({'a': 1, 'c': 1.0})
 print t1.sstables[0].get((1, 1.0))
 print t1.sstables[0].get((2, 7.0))
+
+s.close()
