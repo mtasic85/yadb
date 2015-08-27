@@ -86,3 +86,133 @@ class Index(object):
             sstable_pos = None
 
         return sstable_pos
+
+    def _get_left_sstable_pos(self, key):
+        table = self.sstable.table
+        step = Index._get_key_size(table, key) + 8
+
+        # binary search
+        low = 0
+        high = (self.mm.size() // step) - 1
+        key_pos = None
+
+        while low < high:
+            mid = (low + high) // 2
+
+            key_pos = mid * step
+            cur_key, sstable_pos = Index._get_key_unpacked(table, self.mm, key_pos)
+            # print 'left cur_key:', cur_key
+            
+            _key = tuple(x for x, y in zip(key, cur_key) if x != None)
+            _cur_key = tuple(y for x, y in zip(key, cur_key) if x != None)
+            
+            if _cur_key < _key:
+                low = mid + 1
+            else:
+                high = mid
+        
+        _, sstable_pos = Index._get_key_unpacked(table, self.mm, low * step)
+        return sstable_pos
+
+    def _get_right_sstable_pos(self, key):
+        table = self.sstable.table
+        step = Index._get_key_size(table, key) + 8
+
+        # binary search
+        low = 0
+        high = (self.mm.size() // step) - 1
+        key_pos = None
+
+        while low < high:
+            mid = (low + high) // 2
+
+            key_pos = mid * step
+            cur_key, sstable_pos = Index._get_key_unpacked(table, self.mm, key_pos)
+            # print 'left cur_key:', cur_key
+
+            _key = tuple(x for x, y in zip(key, cur_key) if x != None)
+            _cur_key = tuple(y for x, y in zip(key, cur_key) if x != None)
+
+            if _key < _cur_key:
+                high = mid
+            else:
+                low = mid + 1
+        
+        _, sstable_pos = Index._get_key_unpacked(table, self.mm, low * step)
+        return sstable_pos
+
+    def _get_lt_sstable_pos(self, key):
+        # table = self.sstable.table
+        # step = Index._get_key_size(table, key) + 8
+        # sstable_pos = self._get_left_sstable_pos(key) - step
+        # return sstable_pos
+
+        table = self.sstable.table
+        step = Index._get_key_size(table, key) + 8
+
+        # binary search
+        low = 0
+        high = (self.mm.size() // step) - 1
+        key_pos = None
+
+        while low < high:
+            mid = (low + high) // 2
+
+            key_pos = mid * step
+            cur_key, sstable_pos = Index._get_key_unpacked(table, self.mm, key_pos)
+            # print 'left cur_key:', cur_key
+            
+            _key = tuple(x for x, y in zip(key, cur_key) if x != None)
+            _cur_key = tuple(y for x, y in zip(key, cur_key) if x != None)
+            
+            if _cur_key < _key:
+                low = mid + 1
+            else:
+                high = mid
+        
+        _, sstable_pos = Index._get_key_unpacked(table, self.mm, (low - 1) * step)
+        return sstable_pos
+
+    def _get_le_sstable_pos(self, key):
+        # table = self.sstable.table
+        # step = Index._get_key_size(table, key) + 8
+        # sstable_pos = self._get_right_sstable_pos(key) - step
+        # return sstable_pos
+
+        table = self.sstable.table
+        step = Index._get_key_size(table, key) + 8
+
+        # binary search
+        low = 0
+        high = (self.mm.size() // step) - 1
+        key_pos = None
+
+        while low < high:
+            mid = (low + high) // 2
+
+            key_pos = mid * step
+            cur_key, sstable_pos = Index._get_key_unpacked(table, self.mm, key_pos)
+            # print 'left cur_key:', cur_key
+
+            _key = tuple(x for x, y in zip(key, cur_key) if x != None)
+            _cur_key = tuple(y for x, y in zip(key, cur_key) if x != None)
+
+            if _key < _cur_key:
+                high = mid
+            else:
+                low = mid + 1
+        
+        _, sstable_pos = Index._get_key_unpacked(table, self.mm, (low - 1) * step)
+        return sstable_pos
+
+    def _get_gt_sstable_pos(self, key):
+        table = self.sstable.table
+        step = Index._get_key_size(table, key) + 8
+        sstable_pos = self._get_right_sstable_pos(key)
+        return sstable_pos
+
+    def _get_ge_sstable_pos(self, key):
+        table = self.sstable.table
+        step = Index._get_key_size(table, key) + 8
+        sstable_pos = self._get_left_sstable_pos(key)
+        return sstable_pos

@@ -2,6 +2,8 @@ __all__ = ['Column']
 
 import struct
 
+from .expr import Expr
+
 class Column(object):
     def __init__(self, name=None, type=None, size=None):
         self.name = name
@@ -9,7 +11,30 @@ class Column(object):
         self.size = size
 
     def __repr__(self):
-        return '<%s name: %r, type: %r, size: %i>' % (self.__class__.__name__, self.name, self.type, self.size)
+        return '<%s name: %r, type: %r, size: %s>' % (
+            self.__class__.__name__,
+            self.name,
+            self.type,
+            self.size,
+        )
+
+    def __eq__(self, other):
+        return Expr(self, '==', other)
+
+    def __ne__(self, other):
+        return Expr(self, '!=', other)
+
+    def __lt__(self, other):
+        return Expr(self, '<', other)
+
+    def __le__(self, other):
+        return Expr(self, '<=', other)
+
+    def __gt__(self, other):
+        return Expr(self, '>', other)
+
+    def __ge__(self, other):
+        return Expr(self, '>=', other)
 
     def get_dict(self):
         return {

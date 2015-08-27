@@ -12,7 +12,7 @@ from .query import Query
 from .deferred import Deferred
 
 class Table(object):
-    MEMTABLE_LIMIT_N_ITEMS = 10000
+    MEMTABLE_LIMIT_N_ITEMS = 100
 
     def __init__(self, db, table_name):
         self.store = db.store
@@ -29,7 +29,7 @@ class Table(object):
 
         # sstables
         self.sstables = []
-        dirname = os.path.join(self.store.data_path, self.db.db_name, self.table.table_name)
+        dirname = os.path.join(self.store.data_path, self.db.db_name, self.table_name)
 
         for filename in os.listdir(dirname):
             if not filename.startswith('commitlog'):
@@ -43,8 +43,6 @@ class Table(object):
             sst = SSTable(self, t)
             sst.open()
             self.sstables.append(sst)
-
-        print self.sstables
 
     def __getattr__(self, attr):
         c = getattr(self.schema, attr)
@@ -132,11 +130,11 @@ class Table(object):
     def query(self):
         q = Query(self.db.store)
         return q
-    
+
     def insert(self, **row):
         # tx
         tx = self.store.get_current_transaction()
-        tx.log((self.db, self.table, self.commit_insert, (), row))
+        tx.log((self.db, self, self.commit_insert, (), row))
 
     def commit_insert(self, **row):
         # compare against schema
@@ -172,8 +170,46 @@ class Table(object):
         return d
     
     def commit_get(self, d, *args):
-        key = tuple(args)
+        key = args
+        v = self._get(key)
+        d.set(v)
 
+    def select(self, *args):
+        d = Deferred()
+        q = Query(self.store, d)
+
+        # tx
+        tx = self.store.get_current_transaction()
+        tx.log((self.db, self.table, self.commit_select, (d, q), {}))
+
+        return q
+
+    def commit_select(self, d, query):
+        print 'commit_select', query
+        rows = []
+
+        where_keys = []
+
+        for where_clause in query.where_clauses:
+            print 'where_clause:', where_clause
+            key = [None] * len(self.schema.type_fields['primary_key'])
+            index = self.schema.type_fields['primary_key'].index(where_clause.left.name)
+            key[index] = where_clause.right
+            key = tuple(key)
+            print 'key:', key
+
+            if where_clause.op == '<':
+                print 'lt:', self._get_lt(key)
+            elif where_clause.op == '<=':
+                print 'le:', self._get_le(key)
+            elif where_clause.op == '>':
+                print 'gt:', self._get_gt(key)
+            elif where_clause.op == '>=':
+                print 'ge:', self._get_ge(key)
+
+        d.set(rows)
+
+    def _get(self, key):
         try:
             v = self.memtable[key]
         except KeyError as e:
@@ -186,4 +222,64 @@ class Table(object):
             else:
                 raise KeyError
 
-        d.set(v)
+        return v
+
+    def _get_lt(self, key):
+        try:
+            v, p = self.memtable[key]
+        except KeyError as e:
+            for sst in reversed(self.sstables):
+                try:
+                    v, p = sst.get_lt(key)
+                    break
+                except KeyError as e:
+                    pass
+            else:
+                raise KeyError
+
+        return v, p
+
+    def _get_le(self, key):
+        try:
+            v, p = self.memtable[key]
+        except KeyError as e:
+            for sst in reversed(self.sstables):
+                try:
+                    v, p = sst.get_le(key)
+                    break
+                except KeyError as e:
+                    pass
+            else:
+                raise KeyError
+
+        return v, p
+    
+    def _get_gt(self, key):
+        try:
+            v, p = self.memtable[key]
+        except KeyError as e:
+            for sst in reversed(self.sstables):
+                try:
+                    v, p = sst.get_gt(key)
+                    break
+                except KeyError as e:
+                    pass
+            else:
+                raise KeyError
+
+        return v, p
+    
+    def _get_ge(self, key):
+        try:
+            v, p = self.memtable[key]
+        except KeyError as e:
+            for sst in reversed(self.sstables):
+                try:
+                    v, p = sst.get_ge(key)
+                    break
+                except KeyError as e:
+                    pass
+            else:
+                raise KeyError
+
+        return v, p

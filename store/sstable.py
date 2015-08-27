@@ -125,3 +125,24 @@ class SSTable(object):
         sstable_pos = self.index._get_sstable_pos(key)
         row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
         return row
+
+    def get_lt(self, key):
+        sstable_pos = self.index._get_lt_sstable_pos(key)
+        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        return row, sstable_pos
+
+    def get_le(self, key):
+        sstable_pos = self.index._get_le_sstable_pos(key)
+        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        return row, sstable_pos
+
+    def get_gt(self, key):
+        # print 'get_gt:', key
+        sstable_pos = self.index._get_gt_sstable_pos(key)
+        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        return row, sstable_pos
+
+    def get_ge(self, key):
+        sstable_pos = self.index._get_ge_sstable_pos(key)
+        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        return row, sstable_pos
