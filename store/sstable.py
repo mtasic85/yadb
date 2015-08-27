@@ -8,7 +8,8 @@ import struct
 import decimal
 decimal.getcontext().prec = 4
 
-from index import Index
+from .index import Index
+from .offset import Offset
 
 class SSTable(object):
     def __init__(self, table, t=None):
@@ -27,7 +28,12 @@ class SSTable(object):
         path = os.path.join(dirpath, filename)
         self.path = path
 
-        # index path
+        # offset and offset path
+        filename = 'offset-%s.offset' % t
+        path = os.path.join(dirpath, filename)
+        self.offset = Offset(self, path)
+
+        # index and index path
         filename = 'index-%s.index' % t
         path = os.path.join(dirpath, filename)
         self.index = Index(self, path)
@@ -45,11 +51,13 @@ class SSTable(object):
 
     def __enter__(self):
         self.f = open(self.path, 'wb')
+        self.offset.f = open(self.offset.path, 'wb')
         self.index.f = open(self.index.path, 'wb')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.index.f.close()
+        self.offset.f.close()
         self.f.close()
         return False
 
@@ -62,11 +70,21 @@ class SSTable(object):
         pass
 
     def _add_row(self, row):
+        # sstable
         row_blob = SSTable._get_row_packed(self.table, row)
-        pos = self.f.tell()
+        sstable_pos = self.f.tell()
         self.f.write(row_blob)
 
-        key_blob = Index._get_key_packed(self.table, row, pos)
+        # offset
+        sstable_pos_blob = Offset._get_sstable_pos_packed(
+            self.table,
+            sstable_pos,
+        )
+
+        self.offset.f.write(sstable_pos_blob)
+
+        # index
+        key_blob = Index._get_key_packed(self.table, row, sstable_pos)
         self.index.f.write(key_blob)
 
     @classmethod
@@ -114,10 +132,12 @@ class SSTable(object):
     def open(self):
         self.f = open(self.path, 'r+b')
         self.mm = mmap.mmap(self.f.fileno(), 0)
+        self.offset.open()
         self.index.open()
 
     def close(self):
         self.index.close()
+        self.offset.close()
         self.mm.close()
         self.f.close()
 
