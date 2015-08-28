@@ -11,7 +11,8 @@ class Transaction(object):
 
     def __enter__(self):
         # thread local transaction
-        self.store.transactions[thread.get_ident()].append(self)
+        tx_queue = self.store.transactions[thread.get_ident()]
+        tx_queue.append(self)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -32,7 +33,9 @@ class Transaction(object):
                 for a in self._log:
                     for b in tx._log:
                         # detect conflict
+                        # compare databases and tables
                         if a[0] == b[0] and a[1] == b[1]:
+                            # compare operation's method/function
                             if a[3] == b[3] == Table._commit_insert:
                                 conflict = True
                                 break
@@ -48,14 +51,12 @@ class Transaction(object):
 
     def commit(self):
         # print 'commit:', self
-
         for inst in self._log:
             db, table, f, args, kwargs = inst
             f(*args, **kwargs)
 
     def execute(self):
         # print 'execute:', self
-
         while not self.check():
             time.sleep(0.001)
 

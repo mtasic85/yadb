@@ -50,12 +50,18 @@ class SSTable(object):
         )
 
     def __enter__(self):
+        '''
+        Used only on data writing to file.
+        '''
         self.f = open(self.path, 'wb')
         self.offset.f = open(self.offset.path, 'wb')
         self.index.f = open(self.index.path, 'wb')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        '''
+        Used only on data writing to file.
+        '''
         self.index.f.close()
         self.offset.f.close()
         self.f.close()
@@ -121,39 +127,44 @@ class SSTable(object):
         return sst
 
     def open(self):
+        '''
+        Used only on data reading from file.
+        '''
         self.f = open(self.path, 'r+b')
         self.mm = mmap.mmap(self.f.fileno(), 0)
         self.offset.open()
         self.index.open()
 
     def close(self):
+        '''
+        Used only on data reading from file.
+        '''
         self.index.close()
         self.offset.close()
         self.mm.close()
         self.f.close()
 
     def get(self, key):
-        sstable_pos = self.index._get_sstable_pos(key)
+        offset_pos, sstable_pos = self.index._get_sstable_pos(key)
         row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
-        return row
+        return row, offset_pos, sstable_pos
 
     def get_lt(self, key):
-        sstable_pos = self.index._get_lt_sstable_pos(key)
+        offset_pos, sstable_pos = self.index._get_lt_sstable_pos(key)
         row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
-        return row, sstable_pos
+        return row, offset_pos, sstable_pos
 
     def get_le(self, key):
-        sstable_pos = self.index._get_le_sstable_pos(key)
+        offset_pos, sstable_pos = self.index._get_le_sstable_pos(key)
         row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
-        return row, sstable_pos
+        return row, offset_pos, sstable_pos
 
     def get_gt(self, key):
-        # print 'get_gt:', key
-        sstable_pos = self.index._get_gt_sstable_pos(key)
+        offset_pos, sstable_pos = self.index._get_gt_sstable_pos(key)
         row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
-        return row, sstable_pos
+        return row, offset_pos, sstable_pos
 
     def get_ge(self, key):
-        sstable_pos = self.index._get_ge_sstable_pos(key)
+        offset_pos, sstable_pos = self.index._get_ge_sstable_pos(key)
         row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
-        return row, sstable_pos
+        return row, offset_pos, sstable_pos

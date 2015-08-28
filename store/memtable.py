@@ -19,16 +19,18 @@ class MemTable(object):
         return len(self.items)
 
     def get(self, key):
+        pos = None
         row = None
 
-        for k, r in self.items:
+        for i, (k, r) in enumerate(self.items):
             if k == key:
+                pos = i
                 row = r
                 break
         else:
             raise KeyError
 
-        return row
+        return row, pos, pos
 
     def set(self, key, row):
         bisect.insort(self.items, (key, row))

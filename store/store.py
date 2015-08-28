@@ -33,5 +33,6 @@ class Store(object):
 
     def get_current_transaction(self):
         # currently running transaction in current thread
-        tx = self.transactions[thread.get_ident()][-1]
+        tx_queue = self.transactions[thread.get_ident()]
+        tx = tx_queue[-1]
         return tx
