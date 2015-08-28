@@ -12,6 +12,9 @@ class Schema(object):
         self.table = table
         self.type_fields = None
 
+    def __getitem__(self, key):
+        return self.type_fields[key]
+    
     def __getattr__(self, attr):
         return self.type_fields[attr]
 
@@ -39,7 +42,7 @@ class Schema(object):
             if c == 'primary_key':
                 _type_fields[c] = t
             else:
-                _type_fields[c] = t.get_dict()
+                _type_fields[c] = dict(t)
         
         # save
         with open(path, 'wb') as f:
@@ -68,5 +71,4 @@ class Schema(object):
 
         # add primary_key at the end of dict
         type_fields['primary_key'] = _type_fields['primary_key']
-
         self.type_fields = type_fields

@@ -36,12 +36,18 @@ class Column(object):
     def __ge__(self, other):
         return Expr(self, '>=', other)
 
-    def get_dict(self):
-        return {
+    def __iter__(self):
+        '''
+        Used for conversion to dict in Schema.
+        '''
+        d = {
             'name': self.name,
             'type': self.type,
             'size': self.size,
         }
+
+        for k, v in d.items():
+            yield k, v
 
     def _get_struct_format(self, value=None):
         if self.type == 'bool':
@@ -60,6 +66,11 @@ class Column(object):
 
         return fmt
 
+    def _get_column_size(self, value):
+        fmt = self._get_struct_format(value)
+        size = struct.calcsize(fmt)
+        return size
+
     def _get_column_packed(self, value=None):
         fmt = self._get_struct_format(value)
         is_null = 1 if value is None else 0
@@ -71,11 +82,6 @@ class Column(object):
             b = struct.pack(fmt, 0, is_null, value)
 
         return b
-
-    def _get_column_size(self, value):
-        fmt = self._get_struct_format(value)
-        size = struct.calcsize(fmt)
-        return size
 
     def _get_column_unpacked(self, mm, pos):
         status, is_null = struct.unpack_from('!BB', mm, pos)

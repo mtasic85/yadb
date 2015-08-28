@@ -77,14 +77,11 @@ class SSTable(object):
 
         # offset
         sstable_pos_blob = Offset._get_sstable_pos_packed(
-            self.table,
-            sstable_pos,
-        )
-
+            self, sstable_pos)
         self.offset.f.write(sstable_pos_blob)
 
         # index
-        key_blob = Index._get_key_packed(self.table, row, sstable_pos)
+        key_blob = Index._get_key_packed(self, row, sstable_pos)
         self.index.f.write(key_blob)
 
     @classmethod

@@ -142,7 +142,7 @@ class Table(object):
     def insert(self, **row):
         # tx
         tx = self.store.get_current_transaction()
-        tx.log((self.db, self, self._commit_insert, (), row))
+        tx.log((self.db, self, Table._commit_insert, (self,), row))
 
     def _commit_insert(self, **row):
         # check if all columns exist in table's schema
@@ -179,7 +179,7 @@ class Table(object):
 
         # tx
         tx = self.store.get_current_transaction()
-        tx.log((self.db, self.table, self._commit_get, (d, key), {}))
+        tx.log((self.db, self.table, Table._commit_get, (self, d, key), {}))
 
         return d
     
@@ -194,7 +194,7 @@ class Table(object):
 
         # tx
         tx = self.store.get_current_transaction()
-        tx.log((self.db, self.table, self._commit_select, (d, q), {}))
+        tx.log((self.db, self.table, Table._commit_select, (self, d, q), {}))
 
         return q
 
@@ -209,7 +209,7 @@ class Table(object):
             key[index] = where_clause.right
             key = tuple(key)
             print 'key:', key
-            
+
             if where_clause.op == '<':
                 print 'lt:', self._get_lt(key)
             elif where_clause.op == '<=':

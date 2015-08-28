@@ -33,7 +33,7 @@ class Transaction(object):
                     for b in tx._log:
                         # detect conflict
                         if a[0] == b[0] and a[1] == b[1]:
-                            if a[3] == b[3] == 'insert':
+                            if a[3] == b[3] == Table._commit_insert:
                                 conflict = True
                                 break
 
