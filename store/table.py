@@ -29,10 +29,15 @@ class Table(object):
 
         # sstables
         self.sstables = []
-        dirname = os.path.join(self.store.data_path, self.db.db_name, self.table_name)
+        
+        dirname = os.path.join(
+            self.store.data_path,
+            self.db.db_name,
+            self.table_name,
+        )
 
         for filename in os.listdir(dirname):
-            if not filename.startswith('commitlog'):
+            if not filename.startswith('commitlog-'):
                 continue
 
             s = filename.index('commitlog-') + len('commitlog-')
@@ -94,7 +99,11 @@ class Table(object):
         type_fields['primary_key'] = column_names
 
         # create table dir inside of database dir
-        dirpath = os.path.join(db.store.data_path, db.db_name, table_name)
+        dirpath = os.path.join(
+            db.store.data_path,
+            db.db_name,
+            table_name,
+        )
         
         try:
             os.makedirs(dirpath)
@@ -111,11 +120,11 @@ class Table(object):
     def commit_if_required(self):
         if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
             self.commit()
-        # pass
 
     def commit(self):
-        # get sorted rows
-        rows = self.memtable.get_sorted_rows()
+        # get sorted rows by primary_key
+        columns = self.schema.primary_key
+        rows = self.memtable.get_sorted_rows(columns)
         
         # create new sstable
         sst = SSTable.create(self, rows)
@@ -133,24 +142,27 @@ class Table(object):
     def insert(self, **row):
         # tx
         tx = self.store.get_current_transaction()
-        tx.log((self.db, self, self.commit_insert, (), row))
+        tx.log((self.db, self, self._commit_insert, (), row))
 
-    def commit_insert(self, **row):
+    def _commit_insert(self, **row):
+        # check if all columns exist in table's schema
         # compare against schema
         for k, v in row.items():
-            if k not in self.schema.type_fields:
-                raise Exception('filed %r is not defined in schema for table %r' % (k, self.table_name))
+            if k not in self.schema:
+                raise Exception(
+                    'filed %r is not defined in schema for table %r' % (
+                        k,
+                        self.table_name,
+                    )
+                )
 
-        # set default columns
-        for k, v in self.schema.type_fields.items():
-            if k == 'primary_key':
-                continue
-
+        # set default columns to None
+        for k, v in self.schema:
             if k not in row:
                 row[k] = None
 
         # build key
-        key = tuple(row[k] for k in self.schema.type_fields['primary_key'])
+        key = tuple(row[k] for k in self.schema.primary_key)
 
         # insert key
         self.memtable.set(key, row)
@@ -159,44 +171,45 @@ class Table(object):
         self.commit_if_required()
 
     def get(self, *args):
+        # key
+        key = args
+
         # deferred
         d = Deferred()
 
         # tx
         tx = self.store.get_current_transaction()
-        tx.log((self.db, self.table, self.commit_get, (d,) + args, {}))
+        tx.log((self.db, self.table, self._commit_get, (d, key), {}))
 
         return d
     
-    def commit_get(self, d, *args):
-        key = args
+    def _commit_get(self, d, key):
         v = self._get(key)
         d.set(v)
 
     def select(self, *args):
+        # deferred, queue
         d = Deferred()
         q = Query(self.store, d)
 
         # tx
         tx = self.store.get_current_transaction()
-        tx.log((self.db, self.table, self.commit_select, (d, q), {}))
+        tx.log((self.db, self.table, self._commit_select, (d, q), {}))
 
         return q
 
-    def commit_select(self, d, query):
-        print 'commit_select', query
+    def _commit_select(self, d, query):
         rows = []
-
         where_keys = []
 
         for where_clause in query.where_clauses:
             print 'where_clause:', where_clause
-            key = [None] * len(self.schema.type_fields['primary_key'])
-            index = self.schema.type_fields['primary_key'].index(where_clause.left.name)
+            key = [None] * len(self.schema.primary_key)
+            index = self.schema.primary_key.index(where_clause.left.name)
             key[index] = where_clause.right
             key = tuple(key)
             print 'key:', key
-
+            
             if where_clause.op == '<':
                 print 'lt:', self._get_lt(key)
             elif where_clause.op == '<=':

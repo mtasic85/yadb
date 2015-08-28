@@ -77,14 +77,10 @@ class MemTable(object):
 
         return row, memtable_pos
 
-    def get_sorted_rows(self):
+    def get_sorted_rows(self, columns):
         '''
         sort by table's primary_key
         '''
         rows = list(r for k, r in self.items)
-        
-        rows.sort(key=lambda row: tuple(
-            row[c] for c in self.table.schema.type_fields['primary_key']
-        ))
-
+        rows.sort(key=lambda row: tuple(row[c] for c in columns))
         return rows

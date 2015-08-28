@@ -91,10 +91,7 @@ class SSTable(object):
     def _get_row_packed(cls, table, row):
         row_blob_items = []
 
-        for c, t in table.schema.type_fields.items():
-            if c == 'primary_key':
-                continue
-
+        for c, t in table.schema:
             v = row.get(c, None)
             b = t._get_column_packed(v)
             row_blob_items.append(b)
@@ -109,10 +106,7 @@ class SSTable(object):
         row = {}
         p = pos + 8
 
-        for c, t in table.schema.type_fields.items():
-            if c == 'primary_key':
-                continue
-
+        for c, t in table.schema:
             v, p = t._get_column_unpacked(mm, p)
             row[c] = v
 

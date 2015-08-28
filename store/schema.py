@@ -14,7 +14,17 @@ class Schema(object):
 
     def __getattr__(self, attr):
         return self.type_fields[attr]
-    
+
+    def __contains__(self, n):
+        return n in self.type_fields
+
+    def __iter__(self):
+        for k, v in self.type_fields.items():
+            if k == 'primary_key':
+                continue
+
+            yield k, v
+
     @classmethod
     def create(cls, db, table_name, type_fields):
         # save schema
