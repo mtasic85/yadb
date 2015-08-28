@@ -204,6 +204,9 @@ class Table(object):
 
         for where_clause in query.where_clauses:
             print 'where_clause:', where_clause
+
+        for where_clause in query.where_clauses:
+            print 'where_clause:', where_clause
             key = [None] * len(self.schema.primary_key)
             index = self.schema.primary_key.index(where_clause.left.name)
             key[index] = where_clause.right
