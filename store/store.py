@@ -22,7 +22,7 @@ class Store(object):
             db.close()
 
     def database(self, db_name):
-        db = Database.create(self, db_name)
+        db = Database(self, db_name)
         self.databases.append(db)
         return db
 
