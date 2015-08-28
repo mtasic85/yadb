@@ -50,8 +50,8 @@ class Transaction(object):
         # print 'commit:', self
 
         for inst in self._log:
-            db, table, f = inst[0:3]
-            f(*inst[3], **inst[4])
+            db, table, f, args, kwargs = inst
+            f(*args, **kwargs)
 
     def execute(self):
         # print 'execute:', self
