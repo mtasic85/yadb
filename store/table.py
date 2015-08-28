@@ -18,6 +18,7 @@ class Table(object):
         self.store = db.store
         self.db = db
         self.table_name = table_name
+        self.opened = False
 
         # load schema
         schema = Schema(self)
@@ -53,9 +54,20 @@ class Table(object):
         c = getattr(self.schema, attr)
         return c
 
+    def get_table_path(self):
+        return os.path.join(self.db.get_database_path(), self.table_name)
+
+    def is_opened(self):
+        return self.opened
+
+    def open(self):
+        self.opened = True
+
     def close(self):
         for sst in self.sstables:
             sst.close()
+
+        self.opened = False
 
     @classmethod
     def create(cls, db, table_name, _type_fields):
