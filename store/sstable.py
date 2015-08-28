@@ -61,9 +61,9 @@ class SSTable(object):
         self.f.close()
         return False
 
-    def __getitem__(self, key):
-        value = self.get(key)
-        return value
+    # def __getitem__(self, key):
+    #     value = self.get(key)
+    #     return value
 
     def __add__(self, other):
         # FIXME:

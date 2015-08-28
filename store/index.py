@@ -11,7 +11,7 @@ class Index(object):
         self.path = path
         self.mm = None
         self.f = None
-
+    
     @classmethod
     def _get_key_packed(cls, table, row, pos):
         key_blob_items = []

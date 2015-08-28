@@ -28,7 +28,7 @@ class Offset(object):
     def close(self):
         self.mm.close()
         self.f.close()
-    
+
     @classmethod
     def _get_sstable_pos_packed(cls, table, sstable_pos):
         sstable_pos_blob = struct.pack('!Q', sstable_pos)

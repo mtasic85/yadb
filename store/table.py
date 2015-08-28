@@ -123,8 +123,7 @@ class Table(object):
         self.sstables.append(sst)
 
         # clear memtable
-        # self.memtable = MemTable(self)
-        self.memtable.clear()
+        self.memtable = MemTable(self)
 
     @property
     def query(self):
@@ -154,7 +153,7 @@ class Table(object):
         key = tuple(row[k] for k in self.schema.type_fields['primary_key'])
 
         # insert key
-        self.memtable[key] = row
+        self.memtable.set(key, row)
 
         # commit if required
         self.commit_if_required()
@@ -211,7 +210,7 @@ class Table(object):
 
     def _get(self, key):
         try:
-            v = self.memtable[key]
+            v = self.memtable.get(key)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
@@ -226,7 +225,7 @@ class Table(object):
 
     def _get_lt(self, key):
         try:
-            v, p = self.memtable[key]
+            v, p = self.memtable.get_lt(key)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
@@ -241,7 +240,7 @@ class Table(object):
 
     def _get_le(self, key):
         try:
-            v, p = self.memtable[key]
+            v, p = self.memtable.get_le(key)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
@@ -256,7 +255,7 @@ class Table(object):
     
     def _get_gt(self, key):
         try:
-            v, p = self.memtable[key]
+            v, p = self.memtable.get_gt(key)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
@@ -271,7 +270,7 @@ class Table(object):
     
     def _get_ge(self, key):
         try:
-            v, p = self.memtable[key]
+            v, p = self.memtable.get_ge(key)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
