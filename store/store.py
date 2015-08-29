@@ -55,9 +55,8 @@ class Store(object):
         db = Database(self, db_name)
         self.databases[db_name] = db
         return db
-
-    # @property
-    def tx(self):
+    
+    def transaction(self):
         # open self if not
         if not self.is_opened():
             self.open()

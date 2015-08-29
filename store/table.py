@@ -2,9 +2,9 @@ __all__ = ['Table']
 
 import os
 import sys
-from collections import OrderedDict
+# from collections import OrderedDict
 
-from .column import Column
+# from .column import Column
 from .schema import Schema
 from .memtable import MemTable
 from .sstable import SSTable
@@ -14,30 +14,23 @@ from .deferred import Deferred
 class Table(object):
     MEMTABLE_LIMIT_N_ITEMS = 100
 
-    def __init__(self, db, table_name):
+    def __init__(self, db, table_name, type_fields=None):
         self.store = db.store
         self.db = db
         self.table_name = table_name
         self.opened = False
 
-        # load schema
-        schema = Schema(self)
-        schema.load()
-        self.schema = schema
+        # schema
+        self.schema = Schema(self)
 
         # memtable
         self.memtable = MemTable(self)
 
         # sstables
         self.sstables = []
-        
-        dirname = os.path.join(
-            self.store.data_path,
-            self.db.db_name,
-            self.table_name,
-        )
+        table_path = self.get_table_path()
 
-        for filename in os.listdir(dirname):
+        for filename in os.listdir(table_path):
             if not filename.startswith('commitlog-'):
                 continue
 
@@ -68,67 +61,7 @@ class Table(object):
             sst.close()
 
         self.opened = False
-
-    @classmethod
-    def create(cls, db, table_name, _type_fields):
-        # sort type_fields
-        type_fields = OrderedDict()
-
-        for c, t in sorted(_type_fields.items(), key=lambda n: n[0]):
-            if c == 'primary_key':
-                continue
-
-            if t == 'bool':
-                coltype = Column(c, t, 1)
-            elif t == 'int':
-                coltype = Column(c, t, 8)
-            elif t == 'float':
-                coltype = Column(c, t, 8)
-            elif t.startswith('str'):
-                if '[' in t:
-                    size = int(t[t.index('[') + 1:t.index(']')])
-                else:
-                    size = None
-
-                coltype = Column(c, t, size)
-            else:
-                raise Exception('unsupported column type')
-
-            type_fields[c] = coltype
-
-        # add primary_key at the end of dict
-        column_names = _type_fields.get('primary_key', [])
-
-        for column_name in column_names:
-            coltype = type_fields[column_name]
-
-            if coltype.type == 'str' and coltype.size is None:
-                raise Exception(
-                    'Primary key\'s column with type'
-                    '"str" must have fixed size'
-                )
-
-        type_fields['primary_key'] = column_names
-
-        # create table dir inside of database dir
-        dirpath = os.path.join(
-            db.store.data_path,
-            db.db_name,
-            table_name,
-        )
-        
-        try:
-            os.makedirs(dirpath)
-        except OSError as e:
-            pass
-
-        # create schema
-        schema = Schema.create(db, table_name, type_fields)
-
-        # table
-        table = Table(db, table_name)
-        return table
-
+    
     def commit_if_required(self):
         if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
             self.commit()

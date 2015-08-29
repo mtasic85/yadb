@@ -8,13 +8,50 @@ from collections import OrderedDict
 from .column import Column
 
 class Schema(object):
-    def __init__(self, table):
+    def __init__(self, table, type_fields=None):
         self.table = table
-        self.type_fields = None
+        self.type_fields = None # not the same as param 'type_fields'
+
+        # save schema
+        schema_path = self.get_path()
+
+        # type_fields
+        if type_fields and not os.path.exists(schema_path):
+            # type_fields
+            _type_fields = {}
+
+            for c, t in type_fields.items():
+                if c == 'primary_key':
+                    _type_fields[c] = t
+                else:
+                    _type_fields[c] = dict(t)
+            
+            # save
+            with open(schema_path, 'wb') as f:
+                s = yaml.dump(_type_fields)
+                f.write(s)
+        elif not type_fields and os.path.exists(schema_path):
+            # load schema
+            with open(schema_path, 'rb') as f:
+                _type_fields = yaml.load(f)
+
+            # sort type_fields
+            type_fields = OrderedDict(
+                (c, Column(**t))
+                for c, t in sorted(_type_fields.items(), key=lambda n: n[0])
+                if c != 'primary_key'
+            )
+
+            # add primary_key at the end of dict
+            type_fields['primary_key'] = _type_fields['primary_key']
+        else:
+            raise Exception('')
+
+        self.type_fields = type_fields
 
     def __getitem__(self, key):
         return self.type_fields[key]
-    
+
     def __getattr__(self, attr):
         return self.type_fields[attr]
 
@@ -28,47 +65,8 @@ class Schema(object):
 
             yield k, v
 
-    @classmethod
-    def create(cls, db, table_name, type_fields):
-        # save schema
-        dirpath = os.path.join(db.store.data_path, db.db_name, table_name)
+    def get_path(self):
+        table_path = self.table.get_table_path()
         filename = 'schema.yaml'
-        path = os.path.join(dirpath, filename)
-
-        # type_fields
-        _type_fields = {}
-
-        for c, t in type_fields.items():
-            if c == 'primary_key':
-                _type_fields[c] = t
-            else:
-                _type_fields[c] = dict(t)
-        
-        # save
-        with open(path, 'wb') as f:
-            s = yaml.dump(_type_fields)
-            f.write(s)
-
-    def load(self):
-        # load schema
-        data_path = self.table.db.store.data_path
-        db_name = self.table.db.db_name
-        table_name = self.table.table_name
-        dirpath = os.path.join(data_path, db_name, table_name)
-        filename = 'schema.yaml'
-        path = os.path.join(dirpath, filename)
-        
-        # load
-        with open(path, 'rb') as f:
-            _type_fields = yaml.load(f)
-
-        # sort type_fields
-        type_fields = OrderedDict(
-            (c, Column(**t))
-            for c, t in sorted(_type_fields.items(), key=lambda n: n[0])
-            if c != 'primary_key'
-        )
-
-        # add primary_key at the end of dict
-        type_fields['primary_key'] = _type_fields['primary_key']
-        self.type_fields = type_fields
+        path = os.path.join(table_path, filename)
+        return path

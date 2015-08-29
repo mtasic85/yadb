@@ -5,7 +5,7 @@ s = Store('data')
 db1 = s.database('db1')
 t1 = db1.table('t1', a='int', b='str', c='float', primary_key=['a', 'c'])
 
-with s.tx():
+with s.transaction():
     for i in range(10):
         for j in range(10):
             t1.insert(a=i, b='2', c=float(j))
