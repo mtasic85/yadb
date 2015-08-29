@@ -22,12 +22,14 @@ class Store(object):
         # open self if not
         if not self.is_opened():
             self.open()
-
+        
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.is_opened():
             self.close()
+
+        return False
 
     def get_store_path(self):
         return self.data_path
@@ -54,7 +56,7 @@ class Store(object):
         self.databases[db_name] = db
         return db
 
-    @property
+    # @property
     def tx(self):
         # open self if not
         if not self.is_opened():

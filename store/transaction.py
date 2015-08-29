@@ -10,16 +10,22 @@ class Transaction(object):
         self._log = []
 
     def __enter__(self):
-        # thread local transaction
-        tx_queue = self.store.transactions[thread.get_ident()]
-        tx_queue.append(self)
+        self.begin()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.end()
+        return False
+    
+    def begin(self):
+        # thread local transaction
+        tx_queue = self.store.transactions[thread.get_ident()]
+        tx_queue.append(self)
+
+    def end(self):
         # thread local transaction
         tx = self.store.transactions[thread.get_ident()].pop()
         self.execute()
-        return False
 
     def log(self, inst):
         self._log.append(inst)

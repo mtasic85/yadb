@@ -32,6 +32,8 @@ class Database(object):
         if self.is_opened():
             self.close()
 
+        return False
+
     def get_database_path(self):
         return os.path.join(self.store.get_store_path(), self.db_name)
 
