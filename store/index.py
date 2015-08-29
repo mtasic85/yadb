@@ -214,12 +214,6 @@ class Index(object):
         return offset_pos, sstable_pos
 
     def _get_gt_sstable_pos(self, key):
-        # sstable = self.sstable
-        # table = self.sstable.table
-        # step = Index._get_key_size(sstable, key) + 8
-        # sstable_pos = self._get_right_sstable_pos(key)
-        # return sstable_pos
-
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
@@ -250,12 +244,6 @@ class Index(object):
         return offset_pos, sstable_pos
 
     def _get_ge_sstable_pos(self, key):
-        # sstable = self.sstable
-        # table = self.sstable.table
-        # step = Index._get_key_size(sstable, key) + 8
-        # sstable_pos = self._get_left_sstable_pos(key)
-        # return sstable_pos
-
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8

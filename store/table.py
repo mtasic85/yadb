@@ -28,7 +28,7 @@ class Table(object):
 
         # sstables
         self.sstables = []
-        table_path = self.get_table_path()
+        table_path = self.get_path()
 
         for filename in os.listdir(table_path):
             if not filename.startswith('commitlog-'):
@@ -47,8 +47,8 @@ class Table(object):
         c = getattr(self.schema, attr)
         return c
 
-    def get_table_path(self):
-        return os.path.join(self.db.get_database_path(), self.table_name)
+    def get_path(self):
+        return os.path.join(self.db.get_path(), self.table_name)
 
     def is_opened(self):
         return self.opened
@@ -61,7 +61,7 @@ class Table(object):
             sst.close()
 
         self.opened = False
-    
+
     def commit_if_required(self):
         if len(self.memtable) >= self.MEMTABLE_LIMIT_N_ITEMS:
             self.commit()

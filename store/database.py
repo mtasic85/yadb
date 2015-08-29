@@ -15,7 +15,7 @@ class Database(object):
         self.tables = []
 
         # database dir
-        dirpath = self.get_database_path()
+        dirpath = self.get_path()
 
         if not os.path.exists(dirpath):
             try:
@@ -36,15 +36,15 @@ class Database(object):
 
         return False
 
-    def get_database_path(self):
-        return os.path.join(self.store.get_store_path(), self.db_name)
+    def get_path(self):
+        return os.path.join(self.store.get_path(), self.db_name)
 
     def is_opened(self):
         return self.opened
 
     def open(self):
         # database dir
-        dirpath = self.get_database_path()
+        dirpath = self.get_path()
 
         for table_name in os.listdir(dirpath):
             print 'table_name:', table_name

@@ -66,7 +66,4 @@ class Schema(object):
             yield k, v
 
     def get_path(self):
-        table_path = self.table.get_table_path()
-        filename = 'schema.yaml'
-        path = os.path.join(table_path, filename)
-        return path
+        return os.path.join(self.table.get_path(), 'schema.yaml')

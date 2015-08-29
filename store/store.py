@@ -31,7 +31,7 @@ class Store(object):
 
         return False
 
-    def get_store_path(self):
+    def get_path(self):
         return self.data_path
 
     def is_opened(self):
@@ -55,7 +55,7 @@ class Store(object):
         db = Database(self, db_name)
         self.databases[db_name] = db
         return db
-    
+
     def transaction(self):
         # open self if not
         if not self.is_opened():
