@@ -112,20 +112,16 @@ class SSTable(object):
 
     def _add_row(self, row):
         # sstable
-        row_blob = self._get_row_packed(row)
         sstable_pos = self.f.tell()
-        self.f.write(row_blob)
-
+        self._write_row(row)
+        
         # offset
-        sstable_pos_blob = Offset._get_sstable_pos_packed(
-            self, sstable_pos)
-        self.offset.f.write(sstable_pos_blob)
+        self.offset._write_sstable_pos(sstable_pos)
 
         # index
-        key_blob = Index._get_key_packed(self, row, sstable_pos)
-        self.index.f.write(key_blob)
+        self.index._write_key(row, sstable_pos)
 
-    def _get_row_packed(self, row):
+    def _write_row(self, row):
         table = self.table
         row_blob_items = []
 
@@ -135,8 +131,9 @@ class SSTable(object):
             row_blob_items.append(b)
 
         _row_blob = b''.join(row_blob_items)
-        row_blob = struct.pack(b'!Q', len(_row_blob)) + _row_blob
-        return row_blob
+        _row_size = struct.pack(b'!Q', len(_row_blob))
+        self.f.write(_row_size)
+        self.f.write(_row_blob)
 
     @classmethod
     def _get_row_unpacked(cls, table, mm, pos):

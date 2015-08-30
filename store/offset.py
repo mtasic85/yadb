@@ -17,9 +17,7 @@ class Offset(object):
         self.f = None
 
     def __getitem__(self, i):
-        offset_pos = i * 8
-        sstable_pos, = struct.unpack_from('!Q', self.mm, offset_pos)
-        return sstable_pos
+        return self._read_sstable_pos(i)
 
     def get_path(self):
         filename = 'offset-%s.data' % self.t
@@ -52,7 +50,11 @@ class Offset(object):
         '''
         self.f.close()
 
-    @classmethod
-    def _get_sstable_pos_packed(cls, sstable, sstable_pos):
-        sstable_pos_blob = struct.pack('!Q', sstable_pos)
-        return sstable_pos_blob
+    def _read_sstable_pos(self, i):
+        offset_pos = i * 8
+        sstable_pos, = struct.unpack_from('!Q', self.mm, offset_pos)
+        return sstable_pos
+
+    def _write_sstable_pos(self, sstable_pos):
+        pos_blob = struct.pack('!Q', sstable_pos)
+        self.f.write(pos_blob)

@@ -44,9 +44,8 @@ class Index(object):
         '''
         self.f.close()
 
-    @classmethod
-    def _get_key_packed(cls, sstable, row, pos):
-        table = sstable.table
+    def _write_key(self, row, sstable_pos):
+        table = self.sstable.table
         key_blob_items = []
         
         for c in table.schema.primary_key:
@@ -55,9 +54,9 @@ class Index(object):
             key_blob_items.append(b)
 
         key_blob = b''.join(key_blob_items) 
-        pos_blob = struct.pack('!Q', pos)
-        key_blob += pos_blob
-        return key_blob
+        pos_blob = struct.pack('!Q', sstable_pos)
+        self.f.write(key_blob)
+        self.f.write(pos_blob)
 
     @classmethod
     def _get_key_size(cls, sstable, key):
