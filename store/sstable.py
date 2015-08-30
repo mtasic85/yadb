@@ -57,7 +57,7 @@ class SSTable(object):
         self.offset.f.close()
         self.f.close()
         return False
-    
+
     def __add__(self, other):
         # FIXME:
         pass
@@ -112,7 +112,7 @@ class SSTable(object):
 
     def _add_row(self, row):
         # sstable
-        row_blob = SSTable._get_row_packed(self.table, row)
+        row_blob = self._get_row_packed(row)
         sstable_pos = self.f.tell()
         self.f.write(row_blob)
 
@@ -125,8 +125,8 @@ class SSTable(object):
         key_blob = Index._get_key_packed(self, row, sstable_pos)
         self.index.f.write(key_blob)
 
-    @classmethod
-    def _get_row_packed(cls, table, row):
+    def _get_row_packed(self, row):
+        table = self.table
         row_blob_items = []
 
         for c, t in table.schema:
