@@ -170,13 +170,13 @@ class Table(object):
 
         d.set(rows)
 
-    def _get(self, key):
+    def _get(self, key, columns=None):
         try:
-            v, op, sp = self.memtable.get(key)
+            v, op, sp = self.memtable.get(key, columns)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
-                    v, op, sp = sst.get(key)
+                    v, op, sp = sst.get(key, columns)
                     break
                 except KeyError as e:
                     pass
@@ -185,13 +185,13 @@ class Table(object):
 
         return v, op, sp
 
-    def _get_lt(self, key):
+    def _get_lt(self, key, columns=None):
         try:
-            v, op, sp = self.memtable.get_lt(key)
+            v, op, sp = self.memtable.get_lt(key, columns)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
-                    v, op, sp = sst.get_lt(key)
+                    v, op, sp = sst.get_lt(key, columns)
                     break
                 except KeyError as e:
                     pass
@@ -200,28 +200,13 @@ class Table(object):
 
         return v, op, sp
 
-    def _get_le(self, key):
+    def _get_le(self, key, columns=None):
         try:
-            v, op, sp = self.memtable.get_le(key)
+            v, op, sp = self.memtable.get_le(key, columns)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
-                    v, op, sp = sst.get_le(key)
-                    break
-                except KeyError as e:
-                    pass
-            else:
-                raise KeyError
-
-        return v, op, sp
-    
-    def _get_gt(self, key):
-        try:
-            v, op, sp = self.memtable.get_gt(key)
-        except KeyError as e:
-            for sst in reversed(self.sstables):
-                try:
-                    v, op, sp = sst.get_gt(key)
+                    v, op, sp = sst.get_le(key, columns)
                     break
                 except KeyError as e:
                     pass
@@ -230,13 +215,28 @@ class Table(object):
 
         return v, op, sp
     
-    def _get_ge(self, key):
+    def _get_gt(self, key, columns=None):
         try:
-            v, op, sp = self.memtable.get_ge(key)
+            v, op, sp = self.memtable.get_gt(key, columns)
         except KeyError as e:
             for sst in reversed(self.sstables):
                 try:
-                    v, op, sp = sst.get_ge(key)
+                    v, op, sp = sst.get_gt(key, columns)
+                    break
+                except KeyError as e:
+                    pass
+            else:
+                raise KeyError
+
+        return v, op, sp
+    
+    def _get_ge(self, key, columns=None):
+        try:
+            v, op, sp = self.memtable.get_ge(key, columns)
+        except KeyError as e:
+            for sst in reversed(self.sstables):
+                try:
+                    v, op, sp = sst.get_ge(key, columns)
                     break
                 except KeyError as e:
                     pass

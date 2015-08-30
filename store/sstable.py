@@ -20,12 +20,19 @@ class SSTable(object):
         offset = Offset(self, t)
         self.offset = offset
 
-        # index
-        index = Index(self, t, ())
-        self.index = index
-
         # indexes
         self.indexes = {}
+        
+        # index by primary key
+        indexed_columns = (tuple(table.schema.primary_key),)
+        
+        # index each column in primary key
+        # used for ranged queries
+        indexed_columns += tuple((n,) for n in table.schema.primary_key)
+
+        for n in indexed_columns:
+            index = Index(self, t, n)
+            self.indexes[n] = index
 
         self.f = None
         self.mm = None
@@ -48,18 +55,14 @@ class SSTable(object):
         '''
         Used only on data writing to file.
         '''
-        self.f = open(self.get_path(), 'wb')
-        self.offset.f = open(self.offset.get_path(), 'wb')
-        self.index.f = open(self.index.get_path(), 'wb')
+        self.open()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         '''
         Used only on data writing to file.
         '''
-        self.index.f.close()
-        self.offset.f.close()
-        self.f.close()
+        self.close()
         return False
 
     def __add__(self, other):
@@ -81,14 +84,19 @@ class SSTable(object):
         self.f = open(self.get_path(), 'r+b')
         self.mm = mmap.mmap(self.f.fileno(), 0)
         self.offset.open()
-        self.index.open()
+        
+        for column_names, index in self.indexes.items():
+            index.open()
+
         self.opened = True
 
     def close(self):
         '''
         Used only on data reading from file.
         '''
-        self.index.close()
+        for column_names, index in self.indexes.items():
+            index.close()
+
         self.offset.close()
         self.mm.close()
         self.f.close()
@@ -100,13 +108,17 @@ class SSTable(object):
         '''
         self.f = open(self.get_path(), 'wb')
         self.offset.w_open()
-        self.index.w_open()
+        
+        for column_names, index in self.indexes.items():
+            index.w_open()
 
     def w_close(self):
         '''
         Close file for writing.
         '''
-        self.index.w_close()
+        for column_names, index in self.indexes.items():
+            index.w_close()
+
         self.offset.w_close()
         self.f.close()
 
@@ -123,7 +135,8 @@ class SSTable(object):
         self.offset._write_sstable_pos(sstable_pos)
 
         # index
-        self.index._write_key(row, sstable_pos)
+        for column_names, index in self.indexes.items():
+            index._write_key(row, sstable_pos)
 
     def _write_row(self, row):
         table = self.table
@@ -150,27 +163,57 @@ class SSTable(object):
 
         return row
 
-    def get(self, key):
-        offset_pos, sstable_pos = self.index.get_sstable_pos(key)
+    def get(self, key, columns=None):
+        if columns: 
+            columns = tuple(columns)
+        else:
+            columns = tuple(self.table.schema.primary_key)
+
+        index = self.indexes[columns]
+        offset_pos, sstable_pos = index.get_sstable_pos(key)
         row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
-    def get_lt(self, key):
-        offset_pos, sstable_pos = self.index.get_lt_sstable_pos(key)
+    def get_lt(self, key, columns=None):
+        if columns: 
+            columns = tuple(columns)
+        else:
+            columns = tuple(self.table.schema.primary_key)
+
+        index = self.indexes[columns]
+        offset_pos, sstable_pos = index.get_lt_sstable_pos(key)
         row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
-    def get_le(self, key):
-        offset_pos, sstable_pos = self.index.get_le_sstable_pos(key)
+    def get_le(self, key, columns=None):
+        if columns: 
+            columns = tuple(columns)
+        else:
+            columns = tuple(self.table.schema.primary_key)
+
+        index = self.indexes[columns]
+        offset_pos, sstable_pos = index.get_le_sstable_pos(key)
         row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
-    def get_gt(self, key):
-        offset_pos, sstable_pos = self.index.get_gt_sstable_pos(key)
+    def get_gt(self, key, columns=None):
+        if columns: 
+            columns = tuple(columns)
+        else:
+            columns = tuple(self.table.schema.primary_key)
+
+        index = self.indexes[columns]
+        offset_pos, sstable_pos = index.get_gt_sstable_pos(key)
         row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
-    def get_ge(self, key):
-        offset_pos, sstable_pos = self.index.get_ge_sstable_pos(key)
+    def get_ge(self, key, columns=None):
+        if columns: 
+            columns = tuple(columns)
+        else:
+            columns = self.table.schema.primary_key
+
+        index = self.indexes[columns]
+        offset_pos, sstable_pos = index.get_ge_sstable_pos(key)
         row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos

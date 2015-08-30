@@ -14,8 +14,9 @@ class Index(object):
         self.f = None
 
     def get_path(self):
+        table = self.sstable.table
         filename = 'index-%s-%s.data' % (self.t, '-'.join(self.columns))
-        path = os.path.join(self.sstable.table.get_path(), filename)
+        path = os.path.join(table.get_path(), filename)
         return path
 
     def open(self):
@@ -48,7 +49,7 @@ class Index(object):
         table = self.sstable.table
         key_blob_items = []
         
-        for c in table.schema.primary_key:
+        for c in self.columns:
             t = table.schema[c]
             b = t._get_column_packed(row[c])
             key_blob_items.append(b)
@@ -63,7 +64,7 @@ class Index(object):
         key = []
         p = pos
 
-        for c in table.schema.primary_key:
+        for c in self.columns:
             t = table.schema[c]
             v, p = t._get_column_unpacked(self.mm, p)
             key.append(v)
@@ -76,9 +77,9 @@ class Index(object):
         table = self.sstable.table
         size = 0
 
-        for c in table.schema.primary_key:
+        for c in self.columns:
             t = table.schema[c]
-            i = table.schema.primary_key.index(c)
+            i = self.columns.index(c)
             s = t._get_column_size(key[i])
             size += s
 
@@ -112,7 +113,7 @@ class Index(object):
             sstable_pos = None
 
         return offset_pos, sstable_pos
-    
+
     def get_lt_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table

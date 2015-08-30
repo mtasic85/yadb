@@ -18,7 +18,7 @@ class MemTable(object):
     def __len__(self):
         return len(self.items)
 
-    def get(self, key):
+    def get(self, key, columns=None):
         pos = None
         row = None
 
@@ -35,7 +35,7 @@ class MemTable(object):
     def set(self, key, row):
         bisect.insort(self.items, (key, row))
 
-    def get_lt(self, key):
+    def get_lt(self, key, columns=None):
         keys = tuple(k for k, r in self.items)
         memtable_pos = bisect.bisect_left(keys, key)
 
@@ -46,7 +46,7 @@ class MemTable(object):
 
         return row, memtable_pos
 
-    def get_le(self, key):
+    def get_le(self, key, columns=None):
         keys = tuple(k for k, r in self.items)
         memtable_pos = bisect.bisect_right(keys, key)
 
@@ -57,7 +57,7 @@ class MemTable(object):
 
         return row, memtable_pos
 
-    def get_gt(self, key):
+    def get_gt(self, key, columns=None):
         keys = tuple(k for k, r in self.items)
         memtable_pos = bisect.bisect_right(keys, key)
 
@@ -68,7 +68,7 @@ class MemTable(object):
 
         return row, memtable_pos
 
-    def get_ge(self, key):
+    def get_ge(self, key, columns=None):
         keys = tuple(k for k, r in self.items)
         memtable_pos = bisect.bisect_left(keys, key)
 
