@@ -112,65 +112,7 @@ class Index(object):
             sstable_pos = None
 
         return offset_pos, sstable_pos
-
-    """
-    def get_left_sstable_pos(self, key):
-        sstable = self.sstable
-        table = self.sstable.table
-        step = 8 + self._get_key_size(key) # !Q + KEY
-
-        # binary search
-        low = 0
-        high = (self.mm.size() // step) - 1
-        key_pos = None
-
-        while low < high:
-            mid = (low + high) // 2
-            key_pos = mid * step
-            cur_key, sstable_pos = self._read_key(key_pos)
-            # print 'left cur_key:', cur_key
-            
-            _key = tuple(x for x, y in zip(key, cur_key) if x != None)
-            _cur_key = tuple(y for x, y in zip(key, cur_key) if x != None)
-            
-            if _cur_key < _key:
-                low = mid + 1
-            else:
-                high = mid
-        
-        offset_pos = low
-        _, sstable_pos = self._read_key(offset_pos * step)
-        return offset_pos, sstable_pos
-
-    def get_right_sstable_pos(self, key):
-        sstable = self.sstable
-        table = self.sstable.table
-        step = 8 + self._get_key_size(key) # !Q + KEY
-
-        # binary search
-        low = 0
-        high = (self.mm.size() // step) - 1
-        key_pos = None
-
-        while low < high:
-            mid = (low + high) // 2
-            key_pos = mid * step
-            cur_key, sstable_pos = self._read_key(key_pos)
-            # print 'left cur_key:', cur_key
-
-            _key = tuple(x for x, y in zip(key, cur_key) if x != None)
-            _cur_key = tuple(y for x, y in zip(key, cur_key) if x != None)
-
-            if _key < _cur_key:
-                high = mid
-            else:
-                low = mid + 1
-        
-        offset_pos = low
-        _, sstable_pos = self._read_key(offset_pos * step)
-        return offset_pos, sstable_pos
-    """
-
+    
     def get_lt_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
