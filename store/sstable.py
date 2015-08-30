@@ -10,7 +10,7 @@ from .index import Index
 from .offset import Offset
 
 class SSTable(object):
-    def __init__(self, table, t=None):
+    def __init__(self, table, t=None, rows=None):
         self.table = table
         if not t: t = '%.4f' % time.time()
         self.t = t
@@ -27,10 +27,14 @@ class SSTable(object):
         # indexes
         self.indexes = {}
 
-        # for n in 
-
         self.f = None
         self.mm = None
+
+        # rows
+        if rows:
+            self.w_open()
+            self._add_rows(rows)
+            self.w_close()
 
     def __repr__(self):
          return '<%s db: %r, table: %r, t: %r>' % (
@@ -106,7 +110,7 @@ class SSTable(object):
         self.offset.w_close()
         self.f.close()
 
-    def add_rows(self, rows):
+    def _add_rows(self, rows):
         for row in rows:
             self._add_row(row)
 
@@ -114,7 +118,7 @@ class SSTable(object):
         # sstable
         sstable_pos = self.f.tell()
         self._write_row(row)
-        
+
         # offset
         self.offset._write_sstable_pos(sstable_pos)
 
@@ -135,39 +139,38 @@ class SSTable(object):
         self.f.write(_row_size)
         self.f.write(_row_blob)
 
-    @classmethod
-    def _get_row_unpacked(cls, table, mm, pos):
-        row_blob_len, = struct.unpack_from('!Q', mm, pos)
+    def _read_row(self, pos):
+        row_blob_len, = struct.unpack_from('!Q', self.mm, pos)
         row = {}
         p = pos + 8
 
-        for c, t in table.schema:
-            v, p = t._get_column_unpacked(mm, p)
+        for c, t in self.table.schema:
+            v, p = t._get_column_unpacked(self.mm, p)
             row[c] = v
 
         return row
 
     def get(self, key):
-        offset_pos, sstable_pos = self.index._get_sstable_pos(key)
-        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        offset_pos, sstable_pos = self.index.get_sstable_pos(key)
+        row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
     def get_lt(self, key):
-        offset_pos, sstable_pos = self.index._get_lt_sstable_pos(key)
-        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        offset_pos, sstable_pos = self.index.get_lt_sstable_pos(key)
+        row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
     def get_le(self, key):
-        offset_pos, sstable_pos = self.index._get_le_sstable_pos(key)
-        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        offset_pos, sstable_pos = self.index.get_le_sstable_pos(key)
+        row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
     def get_gt(self, key):
-        offset_pos, sstable_pos = self.index._get_gt_sstable_pos(key)
-        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        offset_pos, sstable_pos = self.index.get_gt_sstable_pos(key)
+        row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos
 
     def get_ge(self, key):
-        offset_pos, sstable_pos = self.index._get_ge_sstable_pos(key)
-        row = SSTable._get_row_unpacked(self.table, self.mm, sstable_pos)
+        offset_pos, sstable_pos = self.index.get_ge_sstable_pos(key)
+        row = self._read_row(sstable_pos)
         return row, offset_pos, sstable_pos

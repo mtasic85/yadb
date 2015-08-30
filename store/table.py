@@ -40,7 +40,7 @@ class Table(object):
 
             # sstable
             sst = SSTable(self, t)
-            sst.open()
+            sst.open() # FIXME: lazy open in SSTable only if required
             self.sstables.append(sst)
 
     def __getattr__(self, attr):
@@ -73,10 +73,7 @@ class Table(object):
         rows = self.memtable.get_sorted_rows(columns)
         
         # create new sstable
-        sst = SSTable(self)
-        sst.w_open()
-        sst.add_rows(rows)
-        sst.w_close()
+        sst = SSTable(self, rows=rows)
         sst.open()
         self.sstables.append(sst)
 

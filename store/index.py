@@ -88,7 +88,7 @@ class Index(object):
 
     
     
-    def _get_sstable_pos(self, key):
+    def get_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
@@ -118,7 +118,7 @@ class Index(object):
 
         return offset_pos, sstable_pos
 
-    def _get_left_sstable_pos(self, key):
+    def get_left_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
@@ -148,7 +148,7 @@ class Index(object):
             sstable, self.mm, offset_pos * step)
         return offset_pos, sstable_pos
 
-    def _get_right_sstable_pos(self, key):
+    def get_right_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
@@ -178,7 +178,7 @@ class Index(object):
             sstable, self.mm, offset_pos * step)
         return offset_pos, sstable_pos
 
-    def _get_lt_sstable_pos(self, key):
+    def get_lt_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
@@ -208,7 +208,7 @@ class Index(object):
             sstable, self.mm, offset_pos * step)
         return offset_pos, sstable_pos
 
-    def _get_le_sstable_pos(self, key):
+    def get_le_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
@@ -238,7 +238,7 @@ class Index(object):
             sstable, self.mm, offset_pos * step)
         return offset_pos, sstable_pos
 
-    def _get_gt_sstable_pos(self, key):
+    def get_gt_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
@@ -268,7 +268,7 @@ class Index(object):
             sstable, self.mm, offset_pos * step)
         return offset_pos, sstable_pos
 
-    def _get_ge_sstable_pos(self, key):
+    def get_ge_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
         step = Index._get_key_size(sstable, key) + 8
