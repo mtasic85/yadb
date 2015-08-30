@@ -113,6 +113,7 @@ class Index(object):
 
         return offset_pos, sstable_pos
 
+    """
     def get_left_sstable_pos(self, key):
         sstable = self.sstable
         table = self.sstable.table
@@ -168,6 +169,7 @@ class Index(object):
         offset_pos = low
         _, sstable_pos = self._read_key(offset_pos * step)
         return offset_pos, sstable_pos
+    """
 
     def get_lt_sstable_pos(self, key):
         sstable = self.sstable
