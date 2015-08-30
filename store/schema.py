@@ -10,9 +10,8 @@ from .column import Column
 class Schema(object):
     def __init__(self, table, type_fields=None):
         self.table = table
-        self.type_fields = None # not the same as param 'type_fields'
-
-        # save schema
+        
+        # schema path
         schema_path = self.get_path()
 
         # type_fields
@@ -26,7 +25,7 @@ class Schema(object):
                 else:
                     _type_fields[c] = dict(t)
             
-            # save
+            # save schema
             with open(schema_path, 'wb') as f:
                 s = yaml.dump(_type_fields)
                 f.write(s)
@@ -44,6 +43,9 @@ class Schema(object):
 
             # add primary_key at the end of dict
             type_fields['primary_key'] = _type_fields['primary_key']
+        elif type_fields and os.path.exists(schema_path):
+            # FIXME: compare given type_fields with schema's type_fields
+            pass
         else:
             raise Exception('')
 

@@ -21,7 +21,7 @@ class Table(object):
         self.opened = False
 
         # schema
-        self.schema = Schema(self)
+        self.schema = Schema(self, type_fields)
 
         # memtable
         self.memtable = MemTable(self)
@@ -31,11 +31,11 @@ class Table(object):
         table_path = self.get_path()
 
         for filename in os.listdir(table_path):
-            if not filename.startswith('commitlog-'):
+            if not filename.startswith('sstable-'):
                 continue
 
-            s = filename.index('commitlog-') + len('commitlog-')
-            e = filename.index('.sstable')
+            s = filename.index('sstable-') + len('sstable-')
+            e = filename.index('.data')
             t = filename[s:e]
 
             # sstable
@@ -58,7 +58,8 @@ class Table(object):
 
     def close(self):
         for sst in self.sstables:
-            sst.close()
+            if sst.is_opened():
+                sst.close()
 
         self.opened = False
 
@@ -72,7 +73,10 @@ class Table(object):
         rows = self.memtable.get_sorted_rows(columns)
         
         # create new sstable
-        sst = SSTable.create(self, rows)
+        sst = SSTable(self)
+        sst.w_open()
+        sst.add_rows(rows)
+        sst.w_close()
         sst.open()
         self.sstables.append(sst)
 

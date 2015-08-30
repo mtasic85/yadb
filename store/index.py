@@ -6,11 +6,43 @@ import mmap
 import struct
 
 class Index(object):
-    def __init__(self, sstable, path):
+    def __init__(self, sstable, t, columns, path=None):
         self.sstable = sstable
-        self.path = path
+        self.t = t
+        self.columns = columns
         self.mm = None
         self.f = None
+
+    def get_path(self):
+        filename = 'index-%s-%s.data' % (self.t, '-'.join(self.columns))
+        path = os.path.join(self.sstable.table.get_path(), filename)
+        return path
+
+    def open(self):
+        '''
+        Open file for reading.
+        '''
+        self.f = open(self.get_path(), 'r+b')
+        self.mm = mmap.mmap(self.f.fileno(), 0)
+
+    def close(self):
+        '''
+        Open file for reading.
+        '''
+        self.mm.close()
+        self.f.close()
+
+    def w_open(self):
+        '''
+        Open file for writing.
+        '''
+        self.f = open(self.get_path(), 'wb')
+
+    def w_close(self):
+        '''
+        Close file for writing.
+        '''
+        self.f.close()
 
     @classmethod
     def _get_key_packed(cls, sstable, row, pos):
@@ -55,13 +87,7 @@ class Index(object):
         key = tuple(key)
         return key, sstable_pos
 
-    def open(self):
-        self.f = open(self.path, 'r+b')
-        self.mm = mmap.mmap(self.f.fileno(), 0)
-
-    def close(self):
-        self.mm.close()
-        self.f.close()
+    
     
     def _get_sstable_pos(self, key):
         sstable = self.sstable

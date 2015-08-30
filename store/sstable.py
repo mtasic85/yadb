@@ -5,8 +5,6 @@ import sys
 import mmap
 import time
 import struct
-import decimal
-decimal.getcontext().prec = 4
 
 from .index import Index
 from .offset import Offset
@@ -14,32 +12,25 @@ from .offset import Offset
 class SSTable(object):
     def __init__(self, table, t=None):
         self.table = table
-
-        # sstable path
-        data_path = self.table.db.store.data_path
-        db_name = self.table.db.db_name
-        table_name = self.table.table_name
-        dirpath = os.path.join(data_path, db_name, table_name)
-        
         if not t: t = '%.4f' % time.time()
         self.t = t
-        
-        filename = 'commitlog-%s.sstable' % t
-        path = os.path.join(dirpath, filename)
-        self.path = path
+        self.opened = False
 
-        # offset and offset path
-        filename = 'offset-%s.offset' % t
-        path = os.path.join(dirpath, filename)
-        self.offset = Offset(self, path)
+        # offset
+        offset = Offset(self, t)
+        self.offset = offset
 
-        # index and index path
-        filename = 'index-%s.index' % t
-        path = os.path.join(dirpath, filename)
-        self.index = Index(self, path)
+        # index
+        index = Index(self, t, ())
+        self.index = index
 
-        self.mm = None
+        # indexes
+        self.indexes = {}
+
+        # for n in 
+
         self.f = None
+        self.mm = None
 
     def __repr__(self):
          return '<%s db: %r, table: %r, t: %r>' % (
@@ -53,9 +44,9 @@ class SSTable(object):
         '''
         Used only on data writing to file.
         '''
-        self.f = open(self.path, 'wb')
-        self.offset.f = open(self.offset.path, 'wb')
-        self.index.f = open(self.index.path, 'wb')
+        self.f = open(self.get_path(), 'wb')
+        self.offset.f = open(self.offset.get_path(), 'wb')
+        self.index.f = open(self.index.get_path(), 'wb')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -66,14 +57,58 @@ class SSTable(object):
         self.offset.f.close()
         self.f.close()
         return False
-
-    # def __getitem__(self, key):
-    #     value = self.get(key)
-    #     return value
-
+    
     def __add__(self, other):
         # FIXME:
         pass
+
+    def get_path(self):
+        filename = 'sstable-%s.data' % self.t
+        path = os.path.join(self.table.get_path(), filename)
+        return path
+
+    def is_opened(self):
+        return self.opened
+
+    def open(self):
+        '''
+        Used only on data reading from file.
+        '''
+        self.f = open(self.get_path(), 'r+b')
+        self.mm = mmap.mmap(self.f.fileno(), 0)
+        self.offset.open()
+        self.index.open()
+        self.opened = True
+
+    def close(self):
+        '''
+        Used only on data reading from file.
+        '''
+        self.index.close()
+        self.offset.close()
+        self.mm.close()
+        self.f.close()
+        self.opened = False
+
+    def w_open(self):
+        '''
+        Open file for writing.
+        '''
+        self.f = open(self.get_path(), 'wb')
+        self.offset.w_open()
+        self.index.w_open()
+
+    def w_close(self):
+        '''
+        Close file for writing.
+        '''
+        self.index.w_close()
+        self.offset.w_close()
+        self.f.close()
+
+    def add_rows(self, rows):
+        for row in rows:
+            self._add_row(row)
 
     def _add_row(self, row):
         # sstable
@@ -114,35 +149,6 @@ class SSTable(object):
             row[c] = v
 
         return row
-
-    @classmethod
-    def create(cls, table, rows):
-        # save
-        sst = SSTable(table)
-
-        with sst:
-            for row in rows:
-                sst._add_row(row)
-
-        return sst
-
-    def open(self):
-        '''
-        Used only on data reading from file.
-        '''
-        self.f = open(self.path, 'r+b')
-        self.mm = mmap.mmap(self.f.fileno(), 0)
-        self.offset.open()
-        self.index.open()
-
-    def close(self):
-        '''
-        Used only on data reading from file.
-        '''
-        self.index.close()
-        self.offset.close()
-        self.mm.close()
-        self.f.close()
 
     def get(self, key):
         offset_pos, sstable_pos = self.index._get_sstable_pos(key)
