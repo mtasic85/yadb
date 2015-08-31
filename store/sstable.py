@@ -22,10 +22,10 @@ class SSTable(object):
 
         # indexes
         self.indexes = {}
-        
+
         # index by primary key
         indexed_columns = (tuple(table.schema.primary_key),)
-        
+
         # index each column in primary key
         # used for ranged queries
         indexed_columns += tuple((n,) for n in table.schema.primary_key)
@@ -211,7 +211,7 @@ class SSTable(object):
         if columns: 
             columns = tuple(columns)
         else:
-            columns = self.table.schema.primary_key
+            columns = tuple(self.table.schema.primary_key)
 
         index = self.indexes[columns]
         offset_pos, sstable_pos = index.get_ge_sstable_pos(key)

@@ -2,14 +2,16 @@ __all__ = ['Table']
 
 import os
 import sys
-# from collections import OrderedDict
+from pprint import pprint
+from collections import defaultdict
 
-# from .column import Column
+from .column import Column
 from .schema import Schema
 from .memtable import MemTable
 from .sstable import SSTable
 from .query import Query
 from .deferred import Deferred
+from .expr import Expr
 
 class Table(object):
     MEMTABLE_LIMIT_N_ITEMS = 100
@@ -144,30 +146,306 @@ class Table(object):
 
         return q
 
-    def _commit_select(self, d, query):
-        rows = []
-        where_keys = []
+    """
+    def _eval_expr(self, expr):
+        print '_eval_expr:', expr
+        ranges = []
 
-        for where_clause in query.where_clauses:
-            print 'where_clause:', where_clause
+        if isinstance(expr.left, Expr):
+            l_ranges = self._eval_expr(expr.left)
+        else:
+            l_ranges = None
 
-        for where_clause in query.where_clauses:
-            print 'where_clause:', where_clause
-            key = [None] * len(self.schema.primary_key)
-            index = self.schema.primary_key.index(where_clause.left.name)
-            key[index] = where_clause.right
-            key = tuple(key)
-            print 'key:', key
+        if isinstance(expr.right, Expr):
+            r_ranges = self._eval_expr(expr.right)
+        else:
+            r_ranges = None
 
-            if where_clause.op == '<':
-                print 'lt:', self._get_lt(key)
-            elif where_clause.op == '<=':
-                print 'le:', self._get_le(key)
-            elif where_clause.op == '>':
-                print 'gt:', self._get_gt(key)
-            elif where_clause.op == '>=':
-                print 'ge:', self._get_ge(key)
+        if isinstance(expr.left, Column) and r_ranges is None:
+            k = (expr.right,)
+            cs = (expr.left.name,)
 
+            if expr.op == '==':
+                v, op, sp = self._get(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            elif expr.op == '<':
+                v, op, sp = self._get_lt(k, cs)
+                ranges.append((None, (cs, expr.op, k)))
+            elif expr.op == '<=':
+                v, op, sp = self._get_le(k, cs)
+                ranges.append((None, (cs, expr.op, k)))
+            elif expr.op == '>':
+                v, op, sp = self._get_gt(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            elif expr.op == '>=':
+                v, op, sp = self._get_ge(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            # print 'v, op, sp:', v, op, sp
+        elif isinstance(expr.left, Column) and l_ranges is None:
+            k = (expr.right,)
+            cs = (expr.left.name,)
+
+            if expr.op == '==':
+                v, op, sp = self._get(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            elif expr.op == '<':
+                v, op, sp = self._get_lt(k, cs)
+                ranges.append((None, (cs, expr.op, k)))
+            elif expr.op == '<=':
+                v, op, sp = self._get_le(k, cs)
+                ranges.append((None, (cs, expr.op, k)))
+            elif expr.op == '>':
+                v, op, sp = self._get_gt(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            elif expr.op == '>=':
+                v, op, sp = self._get_ge(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            # print 'v, op, sp:', v, op, sp
+        else:
+            ranges_by_column = defaultdict(list)
+
+            for l_range, r_range in l_ranges:
+                if l_range is not None:
+                    c, op, v = l_range
+                    r = (l_range, r_range)
+
+                    if r not in ranges_by_column[c]:
+                        ranges_by_column[c].append(r)
+
+            for l_range, r_range in r_ranges:
+                if l_range is not None:
+                    c, op, v = l_range
+                    r = (l_range, r_range)
+
+                    if r not in ranges_by_column[c]:
+                        ranges_by_column[c].append(r)
+
+            print 'ranges_by_column[1]:'
+            pprint(ranges_by_column)
+
+            if expr.op == 'and':
+                # if '==' is for same column
+                # then ignore all other operation
+                #
+                # eg: a > 1 and a == 5 is always a == 5
+                for c, rs in ranges_by_column.items():
+                    for r in rs[:]:
+                        l_range, r_range = r
+
+                        if l_range:
+                            c, op, v = l_range
+
+                            if op == '==':
+                                ranges_by_column[c] = [r]
+                                break
+
+                for c, rs in ranges_by_column.items():
+                    for r in rs:
+                        if r not in ranges:
+                            ranges.append(r)
+            elif expr.op == 'or':
+                pass
+
+            print 'ranges_by_column[2]:'
+            pprint(ranges_by_column)
+
+            # if expr.op == '==':
+            #     pass
+            # elif expr.op == '<':
+            #     pass
+            # elif expr.op == '<=':
+            #     pass
+            # elif expr.op == '>':
+            #     pass
+            # elif expr.op == '>=':
+            #     pass
+
+        return ranges
+    """
+
+    """
+    def _cmp_op_val(self, a, b):
+        aop, av = a
+        bop, bv = b
+
+
+
+    def _cmp_ranges(self, a, b):
+        op_map = {
+            '<': -2,
+            '<=': -1,
+            '==': 0,
+            '>=': 1,
+            '>': 2,
+        }
+
+        al_range, ar_range = a
+        bl_range, br_range = b
+        # alc, alop, alv = al_range
+        # arc, arop, arv = ar_range
+        # blc, blop, blv = bl_range
+        # brc, brop, brv = br_range
+
+        if al_range and not ar_range:
+            alc, alop, alv = al_range
+            
+            if bl_range and not br_range:
+                blc, blop, blv = bl_range
+            elif not bl_range and br_range:
+                brc, brop, brv = br_range
+                
+                if op_map[alop] < op_map[brop]:
+                    return -1
+                elif op_map[alop] > op_map[brop]:
+                    if alv < brv:
+                        print '!', a, b
+                        return -1
+                    else:
+                        return 1
+                elif op_map[alop] == op_map[brop]:
+                    return 0
+            else:
+                raise ValueError
+        elif not al_range and ar_range:
+            arc, arop, arv = ar_range
+
+            if bl_range and not br_range:
+                blc, blop, blv = bl_range
+                # return -1
+            elif not bl_range and br_range:
+                brc, brop, brv = br_range
+            else:
+                raise ValueError
+        else:
+            raise ValueError
+
+        return 0
+
+    def _eval_expr(self, expr):
+        print '_eval_expr:', expr
+        ranges = []
+
+        if expr.op == 'and':
+            l_ranges = self._eval_expr(expr.left)
+            r_ranges = self._eval_expr(expr.right)
+            
+            _ranges = list(set(l_ranges + r_ranges))
+            # _ranges.sort(key=lambda rs: self._sort_ranges(*rs))
+            _ranges.sort(cmp=lambda a, b: self._cmp_ranges(a, b))
+            print '_ranges:', _ranges
+
+            # _ranges = []
+
+            # for l_range in l_ranges:
+            #     lc, lop, lv = l_range
+
+            #     for r_range in r_ranges:
+            #         rc, rop, rv = r_range
+
+        elif expr.op == 'or':
+            # FIXME: implement OR
+            pass
+        else:
+            k = (expr.right,)
+            cs = (expr.left.name,)
+
+            if expr.op == '==':
+                v, op, sp = self._get(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            elif expr.op == '<':
+                v, op, sp = self._get_lt(k, cs)
+                ranges.append((None, (cs, expr.op, k)))
+            elif expr.op == '<=':
+                v, op, sp = self._get_le(k, cs)
+                ranges.append((None, (cs, expr.op, k)))
+            elif expr.op == '>':
+                v, op, sp = self._get_gt(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+            elif expr.op == '>=':
+                v, op, sp = self._get_ge(k, cs)
+                ranges.append(((cs, expr.op, k), None))
+
+        return ranges
+    """
+
+    def _cmp_ranges(self, a, b):
+        op_map = {
+            '<': -2,
+            '<=': -1,
+            '==': 0,
+            '>=': 1,
+            '>': 2,
+        }
+
+        ac, aop, av = a
+        bc, bop, bv = b
+
+        if ac == bc:
+            if aop in ('<', '<=') and bop in ('<', '<='):
+                return cmp(av, bv)
+            elif aop in ('>=', '>') and bop in ('>', '>='):
+                return cmp(av, bv)
+            elif aop in ('>=', '>') and bop in ('<', '<='):
+                if av < bv:
+                    return -1
+                elif av > bv:
+                    return 1
+                else:
+                    return 0
+            elif aop in ('<', '<=') and bop in ('>=', '>'):
+                if av < bv:
+                    return 0
+                elif av > bv:
+                    return 1
+                else:
+                    return 0
+            else:
+                return 0
+        else:
+            return cmp(ac, bc)
+
+    def _eval_expr(self, expr):
+        print '_eval_expr:', expr
+        ranges = []
+        
+        if expr.op == 'and':
+            l_ranges = self._eval_expr(expr.left)
+            r_ranges = self._eval_expr(expr.right)
+            _ranges = list(set(l_ranges + r_ranges))
+            _ranges.sort(cmp=lambda a, b: self._cmp_ranges(a, b))
+            
+            # for same column, if op is '==',
+            # then it cancels all other ops if found inside of a range
+
+            print '_ranges:', _ranges
+            ranges.extend(_ranges)
+        elif expr.op == 'or':
+            # FIXME: implement OR
+            pass
+        else:
+            k = (expr.right,)
+            cs = (expr.left.name,)
+
+            if expr.op == '==':
+                v, op, sp = self._get(k, cs)
+            elif expr.op == '<':
+                v, op, sp = self._get_lt(k, cs)
+            elif expr.op == '<=':
+                v, op, sp = self._get_le(k, cs)
+            elif expr.op == '>':
+                v, op, sp = self._get_gt(k, cs)
+            elif expr.op == '>=':
+                v, op, sp = self._get_ge(k, cs)
+            
+            ranges.append((cs[0], expr.op, k[0]))
+
+        return ranges
+
+    def _commit_select(self, d, q):
+        rows = []   # get from keys
+        keys = []   # get from ranges
+        ranges = self._eval_expr(q.where_clause)
+        print 'ranges:', ranges
         d.set(rows)
 
     def _get(self, key, columns=None):
