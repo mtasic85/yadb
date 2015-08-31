@@ -145,16 +145,8 @@ class Table(object):
         tx.log((self.db, self.table, Table._commit_select, (self, d, q), {}))
 
         return q
-    
-    def _cmp_ranges(self, a, b):
-        op_map = {
-            '<': -2,
-            '<=': -1,
-            '==': 0,
-            '>=': 1,
-            '>': 2,
-        }
 
+    def _cmp_ranges(self, a, b):
         ac, aop, av = a
         bc, bop, bv = b
 
