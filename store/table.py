@@ -183,7 +183,8 @@ class Table(object):
             r_ranges = self._eval_expr(expr.right)
             _ranges = list(set(l_ranges + r_ranges))
             _ranges.sort(cmp=lambda a, b: self._cmp_ranges(a, b))
-            
+            print '_ranges[0]:', _ranges
+
             # for same column, if op is '==',
             # then it cancels all other ops if found inside of a range
             ranges_by_column = {}
@@ -317,7 +318,14 @@ class Table(object):
                 ranges_by_column[c] = _rs
 
             print 'ranges_by_column[1]:', ranges_by_column
-            print '_ranges:', _ranges
+            
+            _ranges = []
+            
+            for c in sorted(ranges_by_column.keys()):
+                rs = ranges_by_column[c]
+                _ranges.extend(rs)
+            
+            print '_ranges[1]:', _ranges
             ranges.extend(_ranges)
         elif expr.op == 'or':
             # FIXME: OR is not planned for now, but have it in mind
