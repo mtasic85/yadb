@@ -175,7 +175,7 @@ class Table(object):
             return cmp(ac, bc)
 
     def _eval_expr(self, expr):
-        print '_eval_expr:', expr
+        # print '_eval_expr:', expr
         ranges = []
         
         if expr.op == 'and':
@@ -185,8 +185,7 @@ class Table(object):
             _ranges.sort(cmp=lambda a, b: self._cmp_ranges(a, b))
             # print '_ranges[0]:', _ranges
 
-            # for same column, if op is '==',
-            # then it cancels all other ops if found inside of a range
+            # group by column name
             ranges_by_column = {}
 
             for r in _ranges:
@@ -210,7 +209,6 @@ class Table(object):
                 for a, b in zip(rs[:-1], rs[1:]):
                     ac, aop, av = a
                     bc, bop, bv = b
-                    print 'a, b:', a, b
 
                     if aop == '<':
                         if bop == '<':
@@ -354,6 +352,37 @@ class Table(object):
         keys = []   # get from ranges
         ranges = self._eval_expr(q.where_clause)
         print 'ranges:', ranges
+
+        ranges_by_column = {}
+
+        for r in ranges:
+            c, op, v = r
+
+            if c in ranges_by_column:
+                rs = ranges_by_column[c]
+                rs.append(r)
+            else:
+                ranges_by_column[c] = [r]
+
+        print 'ranges_by_column:', ranges_by_column
+
+        keys_by_column = {}
+
+        for c in sorted(ranges_by_column.keys()):
+            rs = ranges_by_column[c]
+
+            if len(rs) == 1:
+                c, op, v = rs[0]
+                key = (v,)
+                columns = (c,)
+                # row, offset_pos, sstable_pos = self._get(key, columns)
+            elif len(rs) == 2:
+                a, b = rs
+                ac, aop, av = a
+                bc, bop, bv = b
+            else:
+                raise ValueError
+
         d.set(rows)
 
     def _get(self, key, columns=None):
