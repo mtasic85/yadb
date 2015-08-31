@@ -186,11 +186,141 @@ class Table(object):
             
             # for same column, if op is '==',
             # then it cancels all other ops if found inside of a range
+            ranges_by_column = {}
 
+            for r in _ranges:
+                c, op, v = r
+
+                if c in ranges_by_column:
+                    rs = ranges_by_column[c]
+                    rs.append(r)
+                else:
+                    ranges_by_column[c] = [r]
+
+            print 'ranges_by_column[0]:', ranges_by_column
+
+            # optimize ranges by column
+            for c, rs in ranges_by_column.items():
+                if len(rs) == 1:
+                    continue
+
+                _rs = []
+
+                for a, b in zip(rs[:-1], rs[1:]):
+                    ac, aop, av = a
+                    bc, bop, bv = b
+                    print 'a, b:', a, b
+
+                    if aop == '<':
+                        if bop == '<':
+                            r = (ac, '<', min(av, bv))
+                            _rs.append(r)
+                        elif bop == '<=':
+                            if av <= bv:
+                                _rs.append(a)
+                            else:
+                                _rs.append(b)
+                        elif bop == '==':
+                            if av > bv:
+                                _rs.append(b)
+                        elif bop == '>=':
+                            if av > bv:
+                                _rs.append(b)
+                                _rs.append(a)
+                        elif bop == '>':
+                            if av > bv:
+                                _rs.append(b)
+                                _rs.append(a)
+                    elif aop == '<=':
+                        if bop == '<':
+                            if av < bv:
+                                _rs.append(a)
+                            else:
+                                _rs.append(b)
+                        elif bop == '<=':
+                            r = (ac, '<=', min(av, bv))
+                            _rs.append(r)
+                        elif bop == '==':
+                            if av >= bv:
+                                _rs.append(b)
+                        elif bop == '>=':
+                            if av == bv:
+                                r = (ac, '==', av)
+                                _rs.append(r)
+                            elif av > bv:
+                                _rs.append(b)
+                                _rs.append(a)
+                        elif bop == '>':
+                            if av > bv:
+                                _rs.append(b)
+                                _rs.append(a)
+                    elif aop == '==':
+                        if bop == '<':
+                            if av < bv:
+                                _rs.append(a)
+                        elif bop == '<=':
+                            if av <= bv:
+                                _rs.append(a)
+                        elif bop == '==':
+                            if av == bv:
+                                _rs.append(a)
+                        elif bop == '>=':
+                            if av >= bv:
+                                _rs.append(a)
+                        elif bop == '>':
+                            if av > bv:
+                                _rs.append(a)
+                    elif aop == '>=':
+                        if bop == '<':
+                            if av < bv:
+                                _rs.append(a)
+                                _rs.append(b)
+                        elif bop == '<=':
+                            if av == bv:
+                                r = (ac, '==', av)
+                                _rs.append(r)
+                            elif av < bv:
+                                _rs.append(a)
+                                _rs.append(b)
+                        elif bop == '==':
+                            if av == bv:
+                                _rs.append(b)
+                        elif bop == '>=':
+                            r = (ac, '>=', max(av, bv))
+                            _rs.append(r)
+                        elif bop == '>':
+                            if av <= bv:
+                                _rs.append(b)
+                            else:
+                                _rs.append(a)
+                    elif aop == '>':
+                        if bop == '<':
+                            if av < bv:
+                                _rs.append(a)
+                                _rs.append(b)
+                        elif bop == '<=':
+                            if av < bv:
+                                _rs.append(a)
+                                _rs.append(b)
+                        elif bop == '==':
+                            if av < bv:
+                                _rs.append(b)
+                        elif bop == '>=':
+                            if av < bv:
+                                _rs.append(b)
+                            else:
+                                _rs.append(a)
+                        elif bop == '>':
+                            r = (ac, '>=', max(av, bv))
+                            _rs.append(r)
+
+                ranges_by_column[c] = _rs
+
+            print 'ranges_by_column[1]:', ranges_by_column
             print '_ranges:', _ranges
             ranges.extend(_ranges)
         elif expr.op == 'or':
-            # FIXME: implement OR
+            # FIXME: OR is not planned for now, but have it in mind
             pass
         else:
             k = (expr.right,)
