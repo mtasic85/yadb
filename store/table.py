@@ -400,6 +400,21 @@ class Table(object):
 
         return v, op, sp
 
+    def _get_eq(self, key, columns=None):
+        try:
+            v, op, sp = self.memtable.get(key, columns)
+        except KeyError as e:
+            for sst in reversed(self.sstables):
+                try:
+                    v, op, sp = sst.get(key, columns)
+                    break
+                except KeyError as e:
+                    pass
+            else:
+                raise KeyError
+
+        return v, op, sp
+
     def _get_lt(self, key, columns=None):
         try:
             v, op, sp = self.memtable.get_lt(key, columns)
